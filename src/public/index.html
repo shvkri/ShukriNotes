@@ -439,8 +439,8 @@
 	background: var(--surface-color);
 	max-width: 400px;
 	width: 100%;
-	padding: 2rem;
-	border-radius: .5rem;
+	padding: 2.5rem;
+	border-radius: 12px;
 	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
   }
 
@@ -453,9 +453,9 @@
 	display: block;
 	width: 100%;
 	max-width: 400px;
-	padding: 12px;
-	margin-bottom: 1rem;
-	border: 1px solid var(--border-color);
+	padding: 14px;
+	margin-bottom: 1.5rem;
+	border: 8px solid var(--border-color);
 	border-radius: 0px;
 	font-size: 1rem;
 	box-sizing: border-box;
@@ -2205,6 +2205,7 @@
   }
 
   body.custom-background::before {
+	display: none !important;
 	content: '';
 	position: fixed;
 	top: 0;
@@ -3052,9 +3053,8 @@
 <!-- Login Screen -->
 <div id='auth-container'>
 	<form id='login-form' class='auth-form'>
-		<h3>MEMOS</h3>
+		<h3>ShukriNotes</h3>
 		<div id='login-error'></div>
-		<input type='text' id='username' placeholder='Username' required>
 		<input type='password' id='password' placeholder='Password' required>
 		<button type='submit' id='login-btn'>Login</button>
 	</form>
@@ -7216,9 +7216,9 @@
 			const res = await fetch('/api/login', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ username: username.value, password: password.value })
+				body: JSON.stringify({ password: password.value })
 			});
-			if (!res.ok) throw new Error('Invalid username or password.');
+			if (!res.ok) throw new Error('Invalid password.');
 			initializeApp();
 		} catch (error) {
 			err.textContent = error.message;
