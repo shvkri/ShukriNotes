@@ -288,23 +288,23 @@
 	// --- MOCK API (UNCHANGED FROM PREVIOUS MERGE) ---
 	const mockData = {
 		tree: [
-			{ id: '1', type: 'folder', title: '快速入门', children: [ {id: '1-1', type: 'file', title: '欢迎使用'}, {id: '1-2', type: 'file', title: 'Markdown 语法'}, ] },
-			{ id: '2', type: 'folder', title: '项目文档', children: [ {id: '2-1', type: 'file', title: '需求分析'}, ] },
-			{id: '3', type: 'file', title: '会议纪要.md'}
+			{ id: '1', type: 'folder', title: 'Quick Start', children: [ {id: '1-1', type: 'file', title: 'Welcome'}, {id: '1-2', type: 'file', title: 'Markdown Syntax'}, ] },
+			{ id: '2', type: 'folder', title: 'Project Docs', children: [ {id: '2-1', type: 'file', title: 'Requirements'}, ] },
+			{id: '3', type: 'file', title: 'Meeting Notes.md'}
 		],
 		nodes: {
-			'1-1': { id: '1-1', content: '<h1>欢迎使用我们的文档系统</h1><p>这是一个使用 <strong>Quill</strong> 驱动的富文本编辑器。</p><ul><li>功能齐全</li><li>体验流畅</li><li>支持 Markdown 快捷输入</li></ul>' },
-			'1-2': { id: '1-2', content: '<h2>Markdown 基础语法</h2><h3>标题</h3><pre class="ql-syntax" spellcheck="false"># H1\n## H2\n### H3</pre><h3>列表</h3><ul><li>无序列表 1</li><li>无序列表 2</li></ul><ol><li>有序列表 1</li><li>有序列表 2</li></ol><h3>引用</h3><blockquote>Stay hungry, stay foolish.</blockquote>' },
-			'2-1': { id: '2-1', content: '<h1>需求分析文档</h1><table><thead><tr><th>功能点</th><th>优先级</th><th>负责人</th></tr></thead><tbody><tr><td>用户登录</td><td>P0</td><td>张三</td></tr><tr><td>文档编辑</td><td>P0</td><td>李四</td></tr><tr><td>权限管理</td><td>P1</td><td>王五</td></tr></tbody></table>' },
-			'3': { id: '3', content: '<h1>2024-Q3 第一次会议纪要</h1><p>讨论了关于新版本编辑器选型的问题，最终决定采用 Quill。</p>' },
+			'1-1': { id: '1-1', content: '<h1>Welcome to our Documentation System</h1><p>This is a rich text editor powered by <strong>Quill</strong>.</p><ul><li>Full-featured</li><li>Smooth experience</li><li>Supports Markdown shortcuts</li></ul>' },
+			'1-2': { id: '1-2', content: '<h2>Basic Markdown Syntax</h2><h3>Headings</h3><pre class="ql-syntax" spellcheck="false"># H1\n## H2\n### H3</pre><h3>Lists</h3><ul><li>Unordered list 1</li><li>Unordered list 2</li></ul><ol><li>Ordered list 1</li><li>Ordered list 2</li></ol><h3>Quotes</h3><blockquote>Stay hungry, stay foolish.</blockquote>' },
+			'2-1': { id: '2-1', content: '<h1>Requirements Document</h1><table><thead><tr><th>Feature</th><th>Priority</th><th>Owner</th></tr></thead><tbody><tr><td>User Login</td><td>P0</td><td>John</td></tr><tr><td>Document Editing</td><td>P0</td><td>Jane</td></tr><tr><td>Permission Mgmt</td><td>P1</td><td>Bob</td></tr></tbody></table>' },
+			'3': { id: '3', content: '<h1>2024-Q3 Meeting Notes</h1><p>Discussed the selection of the new version editor, finally decided to use Quill.</p>' },
 		}
 	};
 	const mockApi = {
 		getTree: () => Promise.resolve(mockData.tree),
-		getNode: (id) => Promise.resolve(mockData.nodes[id] || {id, content: `<h1>未找到文档 ${id}</h1>`}),
+		getNode: (id) => Promise.resolve(mockData.nodes[id] || {id, content: `<h1>Document not found ${id}</h1>`}),
 		createNode: (data) => {
 			const newNode = {...data, id: `new-${Date.now()}`};
-			if (data.type === 'file') { mockData.nodes[newNode.id] = {id: newNode.id, content: `<h1>${data.title}</h1><p>开始写作...</p>`}; }
+			if (data.type === 'file') { mockData.nodes[newNode.id] = {id: newNode.id, content: `<h1>${data.title}</h1><p>Start writing...</p>`}; }
 			return Promise.resolve(newNode);
 		},
 		saveNode: (id, content) => { if(mockData.nodes[id]) mockData.nodes[id].content = content; return Promise.resolve({success: true}); },
@@ -388,7 +388,7 @@
 			userSettings = await api.getSettings();
 		} catch (error) {
 			console.error("Failed to load Memos settings, defaulting to local upload:", error);
-			// 提供一个安全的回退默认值
+
 			userSettings = { imageUploadDestination: 'local' };
 		}
 
@@ -401,7 +401,7 @@
 					const formData = new FormData();
 					formData.append('file', file);
 
-					// 调用后端的本地上传接口
+
 					const response = await fetch('/api/upload/image', {
 						method: 'POST',
 						body: formData,
@@ -416,9 +416,9 @@
 					}
 					const formData = new FormData();
 					formData.append('file', file);
-					formData.append('clientId', userSettings.imgurClientId); // 将 Client ID 发送到我们的后端代理
+					formData.append('clientId', userSettings.imgurClientId);
 
-					// 调用后端的 Imgur 代理上传接口
+
 					const response = await fetch('/api/proxy/upload/imgur', {
 						method: 'POST',
 						body: formData,
@@ -435,7 +435,7 @@
 				}
 			} catch (error) {
 				console.error("Image upload failed:", error);
-				throw error; // 将错误重新抛出，以便粘贴处理器可以捕获它
+				throw error;
 			}
 		}
 
@@ -885,7 +885,7 @@
 				saveBtn.disabled = true;
 				saveBtn.innerHTML = '<i class=\'fas fa-check\'></i> Saved';
 			} catch (error) {
-				quill.root.innerHTML = `<h1>加载失败</h1><p>${error.message}</p>`;
+				quill.root.innerHTML = `<h1>Failed to load</h1><p>${error.message}</p>`;
 				activeNoteId = null;
 			} finally {
 				hideLoader();
@@ -912,7 +912,7 @@
 			if (nodeId === activeNoteId) {
 				activeNoteId = null; selectedNodeId = null;
 				const firstFile = flatNodes.find(n => n.type === 'file');
-				if (firstFile) await loadNote(firstFile.id); else { quill.root.innerHTML = '<h1>所有文档已删除</h1>'; setEditorEditable(false); }
+				if (firstFile) await loadNote(firstFile.id); else { quill.root.innerHTML = '<h1>All documents deleted</h1>'; setEditorEditable(false); }
 			}
 		}
 		async function handleRename(nodeId) {
