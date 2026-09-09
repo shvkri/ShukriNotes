@@ -316,9 +316,11 @@
   }
 
   /* 当父容器有 .app-visible 类时，才显示侧边栏 */
-  #app-layout-container.app-visible #left-sidebar,
-  #app-layout-container.app-visible #right-sidebar {
+  #app-layout-container.app-visible #left-sidebar {
 	display: block;
+  }
+  #app-layout-container.app-visible #right-sidebar {
+	display: flex;
   }
   @media (max-width: 600px) {
 	#app-layout-container {
