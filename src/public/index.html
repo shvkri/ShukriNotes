@@ -430,6 +430,7 @@
 	background: transparent !important;
 	box-shadow: none !important;
 	padding: 0 !important;
+	margin: 0;
   }
 
   #auth-container {
@@ -437,37 +438,62 @@
 	background: var(--surface-color);
 	max-width: 380px;
 	width: 100%;
-	padding: 2.5rem;
+	padding: 2.25rem 2rem;
 	border-radius: 12px;
 	box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
 	border: 1px solid var(--border-color);
 	box-sizing: border-box;
   }
 
+  .auth-title {
+	margin: 0 0 1.25rem 0;
+	font-size: 1.5rem;
+	font-weight: 700;
+	color: var(--text-color);
+	letter-spacing: -0.02em;
+  }
+
+  #login-error {
+	color: var(--danger-color);
+	font-size: 0.875rem;
+	line-height: 1.4;
+	margin-bottom: 0.75rem;
+	min-height: 0;
+	transition: all 0.2s ease;
+  }
+
+  #login-error:empty {
+	display: none;
+	margin: 0;
+  }
+
   .auth-form input {
 	display: block;
 	width: 100%;
-	padding: 14px;
-	margin-bottom: 1rem;
+	padding: 12px 14px;
+	margin-bottom: 0.875rem;
 	border: 1px solid var(--border-color);
 	border-radius: 8px;
 	font-size: 1rem;
 	box-sizing: border-box;
+	transition: border-color 0.2s ease, box-shadow 0.2s ease;
   }
 
   #login-btn {
 	width: 100%;
-	padding: 12px;
+	padding: 12px 14px;
 	border-radius: 8px;
 	font-size: 1rem;
 	font-weight: 600;
-	margin-top: 0.5rem;
+	margin-top: 0;
+	box-sizing: border-box;
+	display: block;
   }
-  
-  #login-error {
-	color: var(--danger-color);
-	margin-bottom: .5rem;
-	min-height: 1.2em;
+
+  @media (max-width: 480px) {
+	#auth-container {
+		padding: 1.75rem 1.25rem;
+	}
   }
 
   #app-container {
@@ -3056,8 +3082,9 @@
 <!-- Login Screen -->
 <div id='auth-container'>
 	<form id='login-form' class='auth-form'>
+		<h3 class='auth-title'>ShukriNotes</h3>
 		<div id='login-error'></div>
-		<input type='password' id='password' placeholder='Password' required>
+		<input type='password' id='password' placeholder='Password' required autocomplete='current-password'>
 		<button type='submit' id='login-btn'>Login</button>
 	</form>
 </div>
