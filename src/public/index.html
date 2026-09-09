@@ -4540,6 +4540,7 @@
 				try {
 					await fetch(`/api/notes/${noteId}`, { method: 'DELETE' });
 					noteElement.remove();
+					allNotesCache = allNotesCache.filter(n => n.id !== parseInt(noteId, 10));
 					loadAndRenderTags();
 					loadAndRenderTimeline();
 					loadAndRenderStats();
@@ -5362,6 +5363,36 @@
 		const isDarkMode = document.body.dataset.theme === 'dark';
 		scrollToHeatmapEnd();
 
+		
+
+		searchStatsContainer.style.display = settings.showSearchBar ? '' : 'none';
+		statsCard.style.display = settings.showStatsCard ? '' : 'none';
+		calendarWrapper.style.display = settings.showCalendar ? '' : 'none';
+		tagsSectionWrapper.style.display = settings.showTags ? '' : 'none';
+		timelineSectionWrapper.style.display = settings.showTimeline ? '' : 'none';
+		rightSidebar.style.display = settings.showRightSidebar ? '' : 'none';
+		heatmapContainerWrapper.style.display = settings.showHeatmap ? '' : 'none';
+		notesSection.classList.toggle('date-grouping-enabled', settings.enableDateGrouping);
+
+		const areAllSidebarsHidden = !settings.showSearchBar && !settings.showStatsCard && !settings.showCalendar && !settings.showTags && !settings.showTimeline;
+		const currentDest = settings.imageUploadDestination || 'local';
+		const radioToCheck = document.getElementById(`upload-dest-${currentDest}`);
+		if (radioToCheck) {
+			radioToCheck.checked = true;
+		}
+		imgurClientIdInput.value = settings.imgurClientId || '';
+
+		if (areAllSidebarsHidden) {
+			appLayoutContainer.classList.add('no-sidebars');
+		} else {
+			appLayoutContainer.classList.remove('no-sidebars');
+		}
+		if (!settings.showRightSidebar) {
+			appLayoutContainer.classList.add('no-right-sidebar');
+		} else {
+			appLayoutContainer.classList.remove('no-right-sidebar');
+		}
+
 		document.documentElement.style.setProperty('--waterfall-card-width', `${settings.waterfallCardWidth}px`);
 	}
 
@@ -5531,6 +5562,7 @@
 				try {
 					await fetch(`/api/notes/${noteId}`, { method: 'DELETE' });
 					noteElement.remove();
+					allNotesCache = allNotesCache.filter(n => n.id !== parseInt(noteId, 10));
 				} catch (error) {
 					waterfallObserver.observe(noteElement);
 					showCustomAlert(error.message, 'error');
