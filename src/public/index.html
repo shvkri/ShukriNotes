@@ -2226,7 +2226,6 @@
   }
 
   body.custom-background::before {
-	display: none !important;
 	content: '';
 	position: fixed;
 	top: 0;
@@ -5525,8 +5524,8 @@
 		const isDefaultBg = settings.backgroundImage === defaultSettings.backgroundImage;
 		const isLightMode = document.body.dataset.theme === 'light';
 
-		// 条件：只有在 (不是浅色模式) OR (不是默认背景) 的情况下才应用背景
-		if (settings.backgroundImage && (!isLightMode || !isDefaultBg)) {
+		// 条件：只有在设置了非默认的背景图片时，才应用背景和毛玻璃效果
+		if (settings.backgroundImage && !isDefaultBg) {
 			// document.body.style.backgroundImage = `url(${settings.backgroundImage})`;
 			document.documentElement.style.setProperty('--bg-image-url', `url(${settings.backgroundImage})`);
 
