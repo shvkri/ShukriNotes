@@ -436,28 +436,20 @@
   #auth-container {
 	text-align: center;
 	background: var(--surface-color);
-	max-width: 380px;
+	max-width: 360px;
 	width: 100%;
-	padding: 2.25rem 2rem;
+	padding: 2rem;
 	border-radius: 12px;
 	box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
 	border: 1px solid var(--border-color);
 	box-sizing: border-box;
   }
 
-  .auth-title {
-	margin: 0 0 1.25rem 0;
-	font-size: 1.5rem;
-	font-weight: 700;
-	color: var(--text-color);
-	letter-spacing: -0.02em;
-  }
-
   #login-error {
 	color: var(--danger-color);
 	font-size: 0.875rem;
 	line-height: 1.4;
-	margin-bottom: 0.75rem;
+	margin-bottom: 1rem;
 	min-height: 0;
 	transition: all 0.2s ease;
   }
@@ -471,7 +463,7 @@
 	display: block;
 	width: 100%;
 	padding: 12px 14px;
-	margin-bottom: 0.875rem;
+	margin: 0 0 1rem 0;
 	border: 1px solid var(--border-color);
 	border-radius: 8px;
 	font-size: 1rem;
@@ -485,14 +477,14 @@
 	border-radius: 8px;
 	font-size: 1rem;
 	font-weight: 600;
-	margin-top: 0;
+	margin: 0;
 	box-sizing: border-box;
 	display: block;
   }
 
   @media (max-width: 480px) {
 	#auth-container {
-		padding: 1.75rem 1.25rem;
+		padding: 1.5rem;
 	}
   }
 
@@ -3082,7 +3074,6 @@
 <!-- Login Screen -->
 <div id='auth-container'>
 	<form id='login-form' class='auth-form'>
-		<h3 class='auth-title'>ShukriNotes</h3>
 		<div id='login-error'></div>
 		<input type='password' id='password' placeholder='Password' required autocomplete='current-password'>
 		<button type='submit' id='login-btn'>Login</button>
