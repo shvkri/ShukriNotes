@@ -388,7 +388,7 @@
 			userSettings = await api.getSettings();
 		} catch (error) {
 			console.error("Failed to load Memos settings, defaulting to local upload:", error);
-			
+			// 提供一个安全的回退默认值
 			userSettings = { imageUploadDestination: 'local' };
 		}
 
@@ -401,7 +401,7 @@
 					const formData = new FormData();
 					formData.append('file', file);
 
-					
+					// 调用后端的本地上传接口
 					const response = await fetch('/api/upload/image', {
 						method: 'POST',
 						body: formData,
@@ -416,9 +416,9 @@
 					}
 					const formData = new FormData();
 					formData.append('file', file);
-					formData.append('clientId', userSettings.imgurClientId); 
+					formData.append('clientId', userSettings.imgurClientId); // 将 Client ID 发送到我们的后端代理
 
-					
+					// 调用后端的 Imgur 代理上传接口
 					const response = await fetch('/api/proxy/upload/imgur', {
 						method: 'POST',
 						body: formData,
@@ -435,7 +435,7 @@
 				}
 			} catch (error) {
 				console.error("Image upload failed:", error);
-				throw error; 
+				throw error; // 将错误重新抛出，以便粘贴处理器可以捕获它
 			}
 		}
 

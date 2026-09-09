@@ -1,5 +1,5 @@
 const NOTES_PER_PAGE = 10;
-const SESSION_DURATION_SECONDS = 30*86400; 
+const SESSION_DURATION_SECONDS = 30*86400; // Session 有效期: 30 天
 const SESSION_COOKIE = '__session';
 export default {
 	async fetch(request, env, ctx) {
@@ -7,36 +7,38 @@ export default {
 	},
 };
 
-
+/**
+ * API 请求的统一处理器和路由
+ */
 async function handleApiRequest(request, env) {
 	const { pathname } = new URL(request.url);
 
-	
-	
+	// --- Memos 分享公开路由 ---
+	// 匹配分享页面 /share/some-uuid
 	const sharePageMatch = pathname.match(/^\/share\/([a-zA-Z0-9-]+)$/);
 	if (sharePageMatch) {
 		const publicId = sharePageMatch[1];
-		
+		// 构建目标 URL，将 publicId 作为查询参数
 		const targetUrl = new URL('/share.html', request.url);
 		targetUrl.searchParams.set('id', publicId);
-		
+		// 返回一个 302 临时重定向响应
 		return Response.redirect(targetUrl.toString(), 302);
 	}
-	
+	// 匹配获取分享内容的公开 API /api/public/note/some-uuid
 	const publicNoteMatch = pathname.match(/^\/api\/public\/note\/([a-zA-Z0-9-]+)$/);
 	if (publicNoteMatch && request.method === 'GET') {
 		const publicId = publicNoteMatch[1];
 		return handlePublicNoteRequest(publicId, env);
 	}
-	
+	// 匹配获取分享 Raw 内容的公开 API /api/public/note/raw/some-uuid
 	const publicRawNoteMatch = pathname.match(/^\/api\/public\/note\/raw\/([a-zA-Z0-9-]+)$/);
 	if (publicRawNoteMatch && request.method === 'GET') {
 		const publicId = publicRawNoteMatch[1];
 		return handlePublicRawNoteRequest(publicId, env);
 	}
-	
+	// --- Memos 分享公开路由 ---
 
-	
+	// 公开文件访问路由 (必须在身份验证之前)
 	const publicFileMatch = pathname.match(/^\/api\/public\/file\/([a-zA-Z0-9-]+)$/);
 	if (publicFileMatch) {
 		const publicId = publicFileMatch[1];
@@ -47,7 +49,7 @@ async function handleApiRequest(request, env) {
 	if (tgProxyMatch) {
 		return handleTelegramProxy(request, env);
 	}
-	
+	// --- Telegram Webhook 路由 ---
 	const telegramMatch = pathname.match(/^\/api\/telegram_webhook\/([^\/]+)$/);
 	if (request.method === 'POST' && telegramMatch) {
 		const secret = telegramMatch[1];
@@ -61,7 +63,7 @@ async function handleApiRequest(request, env) {
 		return handleLogout(request, env);
 	}
 
-	
+	// --- 从这里开始，所有 API 都需要认证 ---
 	const session = await isSessionAuthenticated(request, env);
 	if (!session) {
 		return jsonResponse({ error: 'Unauthorized' }, 401);
@@ -88,7 +90,7 @@ async function handleApiRequest(request, env) {
 		return handleShareFileRequest(noteId, fileId, request, env);
 	}
 
-	
+	// --- START: 更新后的 Docs API 路由 ---
 	if (pathname.startsWith('/api/docs')) {
 		if (pathname === '/api/docs/tree' && request.method === 'GET') {
 			return handleDocsTree(request, env);
@@ -97,14 +99,14 @@ async function handleApiRequest(request, env) {
 			return handleDocsNodeCreate(request, env);
 		}
 
-		
+		// 匹配重命名请求
 		const renameMatch = pathname.match(/^\/api\/docs\/node\/([a-zA-Z0-9-]+)\/rename$/);
 		if (renameMatch && request.method === 'POST') {
 			const nodeId = renameMatch[1];
 			return handleDocsNodeRename(request, nodeId, env);
 		}
 
-		
+		// 匹配所有 /api/docs/node/:id 相关的请求
 		const nodeDetailMatch = pathname.match(/^\/api\/docs\/node\/([a-zA-Z0-9-]+)$/);
 		if (nodeDetailMatch) {
 			const nodeId = nodeDetailMatch[1];
@@ -122,7 +124,7 @@ async function handleApiRequest(request, env) {
 			}
 		}
 	}
-	
+	// --- END: 更新后的 Docs API 路由 ---
 
 	if (pathname === '/api/settings') {
 		if (request.method === 'GET') {
@@ -175,7 +177,9 @@ async function handleApiRequest(request, env) {
 	return new Response('Not Found', { status: 404 });
 }
 
-
+/**
+ * 处理统计数据请求
+ */
 async function handleStatsRequest(request, env) {
 	const db = env.DB;
 	try {
@@ -183,14 +187,14 @@ async function handleStatsRequest(request, env) {
 		const tagsCountQuery = db.prepare("SELECT COUNT(DISTINCT tag_id) as total FROM note_tags");
 		const oldestNoteQuery = db.prepare("SELECT MIN(updated_at) as oldest_ts FROM notes");
 
-		
+		// 使用 Promise.all 并行执行所有查询，以获得最佳性能
 		const [memosResult, tagsResult, oldestNoteResult] = await Promise.all([
 			memosCountQuery.first(),
 			tagsCountQuery.first(),
 			oldestNoteQuery.first()
 		]);
 
-		
+		// 组装最终的 JSON 响应
 		const stats = {
 			memos: memosResult.total || 0,
 			tags: tagsResult.total || 0,
@@ -203,27 +207,29 @@ async function handleStatsRequest(request, env) {
 	}
 }
 
-
+/**
+ * 处理时间线数据请求，返回按 年 -> 月 -> 日 结构化的笔记数量统计
+ */
 async function handleTimelineRequest(request, env) {
 	const db = env.DB;
 	try {
 		const { searchParams } = new URL(request.url);
 		const timezone = searchParams.get('timezone') || 'UTC';
-		
-		
-		
+		// D1 不直接支持 strftime 或 to_char, 我们需要获取所有创建时间，然后在 JS 中处理
+		// 注意：如果笔记数量巨大 (几十万条)，这个查询可能会有性能问题。
+		// 对于几千到几万条笔记，这是完全可以接受的。
 		const stmt = db.prepare("SELECT updated_at FROM notes ORDER BY updated_at DESC");
 		const { results } = await stmt.all();
 		if (!results) {
 			return jsonResponse({});
 		}
-		const timezoneFormatter = new Intl.DateTimeFormat('en-US', { 
+		const timezoneFormatter = new Intl.DateTimeFormat('en-US', { // 'en-US' 只是为了格式，不影响结果
 			timeZone: timezone,
 			year: 'numeric',
 			month: 'numeric',
 			day: 'numeric',
 		});
-		
+		// 在 JavaScript 中进行分组统计
 		const timeline = {};
 		for (const note of results) {
 			const date = new Date(note.updated_at);
@@ -232,19 +238,19 @@ async function handleTimelineRequest(request, env) {
 			const month = parseInt(parts.find(p => p.type === 'month').value, 10);
 			const day = parseInt(parts.find(p => p.type === 'day').value, 10);
 
-			
+			// 初始化年
 			if (!timeline[year]) {
 				timeline[year] = { count: 0, months: {} };
 			}
-			
+			// 初始化月
 			if (!timeline[year].months[month]) {
 				timeline[year].months[month] = { count: 0, days: {} };
 			}
-			
+			// 初始化日
 			if (!timeline[year].months[month].days[day]) {
 				timeline[year].months[month].days[day] = { count: 0 };
 			}
-			
+			// 递增计数
 			timeline[year].count++;
 			timeline[year].months[month].count++;
 			timeline[year].months[month].days[day].count++;
@@ -255,22 +261,24 @@ async function handleTimelineRequest(request, env) {
 		return jsonResponse({ error: 'Database Error', message: e.message }, 500);
 	}
 }
-
+/**
+ * 处理全文搜索请求，支持分页和叠加筛选条件
+ */
 async function handleSearchRequest(request, env) {
 	const { searchParams } = new URL(request.url);
 	const query = searchParams.get('q');
 
-	
+	// 1. 如果搜索查询为空或只包含空格，则将请求委托给 handleNotesList
 	if (!query || query.trim().length === 0) {
-		
+		// 直接调用 handleNotesList 并返回其结果，实现无缝回退
 		return handleNotesList(request, env);
 	}
-	
+	// 2. 保留对过短查询的检查
 	if (query.trim().length < 2) {
 		return jsonResponse({ notes: [], hasMore: false });
 	}
 
-	
+	// --- 引入分页逻辑 ---
 	const page = parseInt(searchParams.get('page') || '1');
 	const offset = (page - 1) * NOTES_PER_PAGE;
 	const limit = NOTES_PER_PAGE;
@@ -335,18 +343,20 @@ async function handleSearchRequest(request, env) {
 	}
 }
 
-
+/**
+ * 获取所有标签及其使用次数
+ */
 async function handleTagsList(request, env) {
 	const db = env.DB;
 	try {
-		
-		
+		// 使用 LEFT JOIN 和 COUNT 来统计每个标签关联的笔记数量
+		// ORDER BY count DESC, name ASC 实现了按数量降序、名称升序的排序
 		const stmt = db.prepare(`
             SELECT t.name, COUNT(nt.note_id) as count
             FROM tags t
             LEFT JOIN note_tags nt ON t.id = nt.tag_id
             GROUP BY t.id, t.name
-            HAVING count > 0 
+            HAVING count > 0 -- 只返回被使用过的标签
             ORDER BY count DESC, t.name ASC
         `);
 		const { results } = await stmt.all();
@@ -357,7 +367,9 @@ async function handleTagsList(request, env) {
 	}
 }
 
-
+/**
+ * 检查 Session Cookie 是否有效
+ */
 async function isSessionAuthenticated(request, env) {
 	const cookieHeader = request.headers.get('Cookie');
 	if (!cookieHeader || !cookieHeader.includes(SESSION_COOKIE)) {
@@ -372,7 +384,9 @@ async function isSessionAuthenticated(request, env) {
 	return session || null;
 }
 
-
+/**
+ * 处理登录请求
+ */
 async function handleLogin(request, env) {
 	try {
 		const { username, password } = await request.json();
@@ -392,7 +406,9 @@ async function handleLogin(request, env) {
 	return jsonResponse({ error: 'Invalid credentials' }, 401);
 }
 
-
+/**
+ * 处理退出登录请求
+ */
 async function handleLogout(request, env) {
 	const cookieHeader = request.headers.get('Cookie');
 	if (cookieHeader && cookieHeader.includes(SESSION_COOKIE)) {
@@ -406,7 +422,9 @@ async function handleLogout(request, env) {
 	return jsonResponse({ success: true }, 200, headers);
 }
 
-
+/**
+ * 从 KV 中获取用户设置。如果 KV 中没有，则返回默认值。
+ */
 async function handleGetSettings(request, env) {
 	const defaultSettings = {
 		showSearchBar: true,
@@ -416,36 +434,38 @@ async function handleGetSettings(request, env) {
 		showTimeline: true,
 		showRightSidebar: true,
 		hideEditorInWaterfall: false,
-		showHeatmap: true, 
-		imageUploadDestination: 'local', 
+		showHeatmap: true, // 默认显示热力图
+		imageUploadDestination: 'local', // 默认使用R2
 		imgurClientId: '',
 		surfaceColor: '#ffffff',
 		surfaceColorDark: '#151f31',
 		surfaceOpacity: 1,
-		backgroundOpacity: 1, 
+		backgroundOpacity: 1, // 默认完全不透明
 		backgroundImage: '/bg.jpg',
 		backgroundBlur: 0,
 		waterfallCardWidth: 320,
 		enableDateGrouping: false,
 		telegramProxy: false,
-		showFavorites: true,  
-		showArchive: true,      
-		enablePinning: true,    
-		enableSharing: true,    
-		showDocs: true,          
+		showFavorites: true,  // 控制收藏夹
+		showArchive: true,      // 控制归档
+		enablePinning: true,    // 控制置顶功能
+		enableSharing: true,    // 控制分享功能
+		showDocs: true,          // 控制 Docs 链接
 		enableContentTruncation: false,
 	};
 
 	let savedSettings = await env.NOTES_KV.get('user_settings', 'json');
 
-	
+	// 如果 KV 中没有设置，则返回默认值
 	if (!savedSettings) {
 		return jsonResponse(defaultSettings);
 	}
 	return jsonResponse(savedSettings);
 }
 
-
+/**
+ * 将用户设置保存到 KV 中。
+ */
 async function handleSetSettings(request, env) {
 	try {
 		const settingsToSave = await request.json();
@@ -457,7 +477,9 @@ async function handleSetSettings(request, env) {
 	}
 }
 
-
+/**
+ * 处理笔记列表的 GET 和 POST
+ */
 async function handleNotesList(request, env) {
 	const db = env.DB;
 
@@ -482,12 +504,12 @@ async function handleNotesList(request, env) {
 				if (isArchivedMode) {
 					whereClauses.push("n.is_archived = 1");
 				} else {
-					
+					// 默认（包括收藏夹）都应该排除已归档的
 					whereClauses.push("n.is_archived = 0");
 				}
 
 				if (startTimestamp && endTimestamp) {
-					
+					// 将字符串时间戳转换为数字
 					const startMs = parseInt(startTimestamp);
 					const endMs = parseInt(endTimestamp);
 
@@ -517,7 +539,7 @@ async function handleNotesList(request, env) {
                 LIMIT ? OFFSET ?
             `;
 
-				
+				// 将分页参数添加到 bindings 数组的末尾
 				bindings.push(limit + 1, offset);
 
 				const notesStmt = db.prepare(query);
@@ -547,23 +569,23 @@ async function handleNotesList(request, env) {
 				const now = Date.now();
 				const filesMeta = [];
 
-				
+				// 【核心修改】在插入数据库前，先提取图片 URL
 				const picUrls = extractImageUrls(content);
 
-				
+				// 【核心修改】在 INSERT 语句中加入新的 pics 字段
 				const insertStmt = db.prepare(
 					"INSERT INTO notes (content, files, is_pinned, created_at, updated_at, pics) VALUES (?, ?, 0, ?, ?, ?) RETURNING id"
 				);
-				
-				
+				// 先用一个空的 files 数组插入
+				// 【核心修改】将提取出的 picUrls 绑定到 SQL 语句中
 				const { id: noteId } = await insertStmt.bind(content, "[]", now, now, picUrls).first();
 				if (!noteId) {
 					throw new Error("Failed to create note and get ID.");
 				}
 
-				
+				// --- 【重要逻辑调整】现在上传的文件，只有非图片类型才算作 "附件" (files) ---
 				for (const file of files) {
-					
+					// 只有当文件存在，并且 MIME 类型不是图片时，才将其添加到 filesMeta
 					if (file.name && file.size > 0 && !file.type.startsWith('image/')) {
 						const fileId = crypto.randomUUID();
 						await env.NOTES_R2_BUCKET.put(`${noteId}/${fileId}`, file.stream());
@@ -571,14 +593,14 @@ async function handleNotesList(request, env) {
 					}
 				}
 
-				
+				// 如果有非图片附件，再更新数据库中的 files 字段
 				if (filesMeta.length > 0) {
 					const updateFilesStmt = db.prepare("UPDATE notes SET files = ? WHERE id = ?");
 					await updateFilesStmt.bind(JSON.stringify(filesMeta), noteId).run();
 				}
 
 				await processNoteTags(db, noteId, content);
-				
+				// 获取完整的笔记返回给前端
 				const newNote = await db.prepare("SELECT * FROM notes WHERE id = ?").bind(noteId).first();
 				if (typeof newNote.files === 'string') {
 					newNote.files = JSON.parse(newNote.files);
@@ -593,7 +615,9 @@ async function handleNotesList(request, env) {
 	}
 }
 
-
+/**
+ * 处理单条笔记的 PUT 和 DELETE
+ */
 async function handleNoteDetail(request, noteId, env) {
 	const db = env.DB;
 	const id = parseInt(noteId);
@@ -602,12 +626,12 @@ async function handleNoteDetail(request, noteId, env) {
 	}
 
 	try {
-		
+		// 首先获取现有笔记，用于文件删除和返回数据
 		let existingNote = await db.prepare("SELECT * FROM notes WHERE id = ?").bind(id).first();
 		if (!existingNote) {
 			return new Response('Not Found', { status: 404 });
 		}
-		
+		// 确保 files 字段是数组
 		try {
 			if (typeof existingNote.files === 'string') {
 				existingNote.files = JSON.parse(existingNote.files);
@@ -625,8 +649,8 @@ async function handleNoteDetail(request, noteId, env) {
 					const content = formData.get('content')?.toString() ?? existingNote.content;
 					let currentFiles = existingNote.files;
 
-					
-					
+					// --- 现在的文件处理只关心非图片附件 ---
+					// 处理附件删除 (逻辑不变，因为它操作的是 files 字段)
 					const filesToDelete = JSON.parse(formData.get('filesToDelete') || '[]');
 					if (filesToDelete.length > 0) {
 						const r2KeysToDelete = filesToDelete.map(fileId => `${id}/${fileId}`);
@@ -634,24 +658,24 @@ async function handleNoteDetail(request, noteId, env) {
 						currentFiles = currentFiles.filter(file => !filesToDelete.includes(file.id));
 					}
 
-					
+					// 在处理完文件删除后，检查笔记是否应该被删除
 					const hasNewFiles = formData.getAll('file').some(f => f.name && f.size > 0);
 					if (content.trim() === '' && currentFiles.length === 0 && !hasNewFiles) {
-						
-						
+						// 笔记即将变空，执行删除操作
+						// 1. 删除 R2 中的所有剩余文件（如果有的话，虽然逻辑上这里 currentFiles 应该是空的）
 						const allR2Keys = existingNote.files.map(file => `${id}/${file.id}`);
 						if (allR2Keys.length > 0) {
 							await env.NOTES_R2_BUCKET.delete(allR2Keys);
 						}
-						
+						// 2. 从数据库删除笔记
 						await db.prepare("DELETE FROM notes WHERE id = ?").bind(id).run();
-						
+						// 3. 返回特殊标记，告知前端整个笔记已被删除
 						return jsonResponse({ success: true, noteDeleted: true });
 					}
-					
+					// 处理新附件上传
 					const newFiles = formData.getAll('file');
 					for (const file of newFiles) {
-						
+						// 只有当文件存在，并且不是图片时，才作为附件处理
 						if (file.name && file.size > 0 && !file.type.startsWith('image/')) {
 							const fileId = crypto.randomUUID();
 							await env.NOTES_R2_BUCKET.put(`${id}/${fileId}`, file.stream());
@@ -659,10 +683,10 @@ async function handleNoteDetail(request, noteId, env) {
 						}
 					}
 
-					
+					// 在更新数据库前，提取新的图片 URL 列表
 					const picUrls = extractImageUrls(content);
 					const newTimestamp = shouldUpdateTimestamp ? Date.now() : existingNote.updated_at;
-					
+					// 在 UPDATE 语句中加入 pics 字段的更新
 					const stmt = db.prepare(
 						"UPDATE notes SET content = ?, files = ?, updated_at = ?, pics = ? WHERE id = ?"
 					);
@@ -670,7 +694,7 @@ async function handleNoteDetail(request, noteId, env) {
 					await processNoteTags(db, id, content);
 				}
 
-				if (formData.has('isPinned')) { 
+				if (formData.has('isPinned')) { // --- 这是置顶状态的更新 ---
 					const isPinned = formData.get('isPinned') === 'true' ? 1 : 0;
 					const stmt = db.prepare("UPDATE notes SET is_pinned = ? WHERE id = ?");
 					await stmt.bind(isPinned, id).run();
@@ -745,38 +769,38 @@ async function handleFileRequest(noteId, fileId, request, env) {
 		return new Response('Invalid Note ID', { status: 400 });
 	}
 
-	
+	// 尝试从数据库获取元数据
 	const note = await db.prepare("SELECT files FROM notes WHERE id = ?").bind(id).first();
 
-	
-	
+	// 【核心修改】即使 note 不存在或 files 为空，我们也不立即返回 404，
+	// 因为图片可能只记录在 pics 字段中。
 
 	let files = [];
 	if (note && typeof note.files === 'string') {
 		try {
 			files = JSON.parse(note.files);
 		} catch (e) {
-			
+			// JSON 解析失败则忽略
 		}
 	}
 
 	const fileMeta = files.find(f => f.id === fileId);
 
-	
+	// 尝试从 R2 获取文件对象
 	const object = await env.NOTES_R2_BUCKET.get(`${id}/${fileId}`);
 	if (object === null) {
-		
+		// 如果 R2 中确实没有这个文件，才返回 404
 		return new Response('File not found in storage', { status: 404 });
 	}
 
 	const headers = new Headers();
-	object.writeHttpMetadata(headers); 
+	object.writeHttpMetadata(headers); // 从 R2 对象中写入元数据（如 Content-Type）
 	headers.set('etag', object.httpEtag);
 	headers.set('Cache-Control', 'public, max-age=86400, immutable');
 
-	
+	// --- 根据是否存在 fileMeta 来决定如何设置 headers ---
 	if (fileMeta) {
-		
+		// 【情况一：元数据存在】这是标准文件或旧的图片，按原逻辑处理
 		const contentType = fileMeta.type || 'application/octet-stream';
 		const fileExtension = fileMeta.name.split('.').pop().toLowerCase();
 		const textLikeExtensions = ['yml', 'yaml', 'md', 'log', 'toml', 'sh', 'py', 'js', 'json', 'css', 'html'];
@@ -791,26 +815,32 @@ async function handleFileRequest(noteId, fileId, request, env) {
 		const disposition = isPreview ? 'inline' : 'attachment';
 		headers.set('Content-Disposition', `${disposition}; filename="${encodeURIComponent(fileMeta.name)}"`);
 	} else {
-		
-		
-		
-		
+		// 【情况二：元数据不存在】这是新的 Telegram 图片，我们只确保它能被浏览器正确显示
+		// Content-Type 已经通过 object.writeHttpMetadata(headers) 从 R2 中设置好了，
+		// 这通常足够让浏览器正确渲染图片。
+		// 我们将其设置为 inline，确保它在 <img> 标签中能显示而不是被下载。
 		headers.set('Content-Disposition', 'inline');
 	}
 
 	return new Response(object.body, { headers });
 }
-
+/**
+ *  将 Telegram 的格式化实体 (entities) 转换为 Markdown 文本
+ *
+ * @param {string} text 原始文本
+ * @param {Array<object>} entities 从 Telegram API 收到的标签数组。
+ * @returns {string} 格式化后的、高度兼容的 Markdown 文本。
+ */
 function telegramEntitiesToMarkdown(text, entities = []) {
 	if (!entities || entities.length === 0) {
 		return text;
 	}
 
-	
+	// 优先级决定了标签的嵌套顺序。数字越小，越在外层。
 	const tagPriority = {
 		'text_link': 10,
 		'bold': 20,
-		'italic': 30, 
+		'italic': 30, // 使用 _ 作为斜体标记，避免与 ** 的 * 冲突
 		'underline': 40,
 		'strikethrough': 50,
 		'spoiler': 60,
@@ -855,21 +885,21 @@ function telegramEntitiesToMarkdown(text, entities = []) {
 			continue;
 		}
 		result += text.substring(lastIndex, i);
-		
-		
+		//   - 闭合标签按优先级从高到低（内层先关）
+		//   - 起始标签按优先级从低到高（外层先开）
 		const closeTags = mod.closeTags.sort((a, b) => b.priority - a.priority);
 		const openTags = mod.openTags.sort((a, b) => a.priority - b.priority);
 
 		closeTags.forEach(({ tag }) => {
 			if (adjacentSensitiveTags.includes(tag) && result.endsWith(tag)) {
-				result += '\u200B'; 
+				result += '\u200B'; // 插入零宽度空格
 			}
 			result += tag;
 		});
 
 		openTags.forEach(({ tag }) => {
 			if (adjacentSensitiveTags.includes(tag) && result.endsWith(tag)) {
-				result += '\u200B'; 
+				result += '\u200B'; // 插入零宽度空格
 			}
 			result += tag;
 		});
@@ -889,7 +919,10 @@ function telegramEntitiesToMarkdown(text, entities = []) {
 	return result;
 }
 
-
+/**
+ * 代理 Telegram 媒体文件请求。
+ * 接收一个 file_id，实时获取临时下载链接并重定向用户。
+ */
 async function handleTelegramProxy(request, env) {
 	const { pathname } = new URL(request.url);
 	const match = pathname.match(/^\/api\/tg-media-proxy\/([^\/]+)$/);
@@ -907,7 +940,7 @@ async function handleTelegramProxy(request, env) {
 	}
 
 	try {
-		
+		// 1. 调用 getFile API
 		const getFileUrl = `https://api.telegram.org/bot${botToken}/getFile?file_id=${fileId}`;
 		const fileInfoRes = await fetch(getFileUrl);
 		const fileInfo = await fileInfoRes.json();
@@ -917,10 +950,10 @@ async function handleTelegramProxy(request, env) {
 			return new Response(`Telegram API error: ${fileInfo.description}`, { status: 502 }); // 502 Bad Gateway
 		}
 
-		
+		// 2. 构建临时的下载链接
 		const temporaryDownloadUrl = `https://api.telegram.org/file/bot${botToken}/${fileInfo.result.file_path}`;
 
-		
+		// 3. 返回 302 重定向
 		return Response.redirect(temporaryDownloadUrl, 302);
 
 	} catch (e) {
@@ -929,7 +962,11 @@ async function handleTelegramProxy(request, env) {
 	}
 }
 
-
+/**
+ * - 处理来自 Telegram Bot 的 Webhook 请求
+ * - 视频：保存 file_id，并在正文中嵌入指向 Worker 代理的链接，实现动态播放。
+ * - 图片/文件：仍然二次上传到 R2，保证永久可用。
+ */
 async function handleTelegramWebhook(request, env, secret) {
 	if (!env.TELEGRAM_WEBHOOK_SECRET || secret !== env.TELEGRAM_WEBHOOK_SECRET) {
 		return new Response('Unauthorized', { status: 401 });
@@ -1017,7 +1054,7 @@ async function handleTelegramWebhook(request, env, secret) {
 			throw new Error("Failed to create note record in database.");
 		}
 
-		
+		// 图片处理（保持二次上传）
 		if (photo) {
 			const getFileUrl = `https://api.telegram.org/bot${botToken}/getFile?file_id=${photo.file_id}`;
 			const fileInfoRes = await fetch(getFileUrl);
@@ -1032,18 +1069,18 @@ async function handleTelegramWebhook(request, env, secret) {
 			await bucket.put(`${noteId}/${fileId}`, fileRes.body);
 			const internalFileUrl = `/api/files/${noteId}/${fileId}`;
 
-			picObjects.push(internalFileUrl); 
+			picObjects.push(internalFileUrl); // 为了兼容性，图片直接存 URL 字符串
 			mediaEmbeds.push(`![${fileName}](${internalFileUrl})`);
 		}
 
 		if (video) {
 			if (settings.telegramProxy) {
-				
+				// --- 代理模式 ---
 				const proxyUrl = `/api/tg-media-proxy/${video.file_id}`;
 				videoObjects.push(proxyUrl);
 				mediaEmbeds.push(`<video src="${proxyUrl}" width="100%" controls muted></video>`);
 			} else {
-				
+				// --- 二次上传模式 ---
 				const getFileUrl = `https://api.telegram.org/bot${botToken}/getFile?file_id=${video.file_id}`;
 				const fileInfoRes = await fetch(getFileUrl);
 				const fileInfo = await fileInfoRes.json();
@@ -1059,21 +1096,21 @@ async function handleTelegramWebhook(request, env, secret) {
 			}
 		}
 
-		
+		// 文件处理（根据设置决定模式）
 		if (document) {
 			if (settings.telegramProxy) {
-				
-				
+				// --- 代理模式 ---
+				// 注意：代理文件时，我们无法在笔记中直接展示它，只能存一个元信息
 				filesMeta.push({
-					type: 'telegram_document', 
+					type: 'telegram_document', // 特殊类型
 					file_id: document.file_id,
 					name: document.file_name,
 					size: document.file_size
 				});
-				
+				// 可以在正文加一个占位符，但这需要前端支持渲染
 				// finalContent += `\n\n[Proxy File: ${document.file_name}]`;
 			} else {
-				
+				// --- 二次上传模式 ---
 				const getFileUrl = `https://api.telegram.org/bot${botToken}/getFile?file_id=${document.file_id}`;
 				const fileInfoRes = await fetch(getFileUrl);
 				const fileInfo = await fileInfoRes.json();
@@ -1105,7 +1142,7 @@ async function handleTelegramWebhook(request, env, secret) {
 			finalContent,
 			JSON.stringify(filesMeta),
 			JSON.stringify(picObjects),
-			JSON.stringify(videoObjects), 
+			JSON.stringify(videoObjects), // [新增] 绑定 videoObjects
 			noteId
 		).run();
 
@@ -1120,13 +1157,18 @@ async function handleTelegramWebhook(request, env, secret) {
 	}
 	return new Response('OK', { status: 200 });
 }
-
+/**
+ * 发送消息到指定的 Telegram 聊天
+ * @param {string | number} chatId 聊天 ID
+ * @param {string} text 要发送的文本
+ * @param {string} botToken 机器人 Token
+ */
 async function sendTelegramMessage(chatId, text, botToken) {
 	const url = `https://api.telegram.org/bot${botToken}/sendMessage`;
 	const payload = {
 		chat_id: chatId,
 		text: text,
-		parse_mode: 'Markdown' 
+		parse_mode: 'Markdown' // 也可以使用 'HTML'
 	};
 
 	try {
@@ -1148,45 +1190,47 @@ async function sendTelegramMessage(chatId, text, botToken) {
 
 
 function extractImageUrls(content) {
-	
-	
-	
-	
-	
+	// 正则表达式：全局匹配所有 Markdown 图片语法 ![alt](url)
+	// 关键点：
+	// 1. /g flag - 确保能找到文中所有的图片，而不仅仅是第一个
+	// 2. \!\[.*?\] - 非贪婪地匹配 alt 文本部分，处理各种复杂的 alt 内容
+	// 3. \((.*?)\) - 捕获组( ... )，非贪婪地捕获括号内的 URL
 	const regex = /!\[.*?\]\((.*?)\)/g;
 
-	
-	
+	// 使用 String.prototype.matchAll() 来获取所有匹配项和捕获组
+	// 它返回一个迭代器，我们用 Array.from 将其转换为数组
 	const matches = Array.from(content.matchAll(regex));
 
-	
+	// 提取每个匹配项的第一个捕获组（也就是 URL）
 	const urls = matches.map(match => match[1]);
 
-	
+	// 返回一个 JSON 字符串数组，以便直接存入 D1 的 TEXT 字段
 	return JSON.stringify(urls);
 }
-
+/**
+ * 处理笔记的标签逻辑，过滤掉 URL 中的 #
+ */
 async function processNoteTags(db, noteId, content) {
 	const plainTextContent = content.replace(/<[^>]*>/g, '');
-	
+	// 1. 定义两个正则表达式：一个用于标签，一个用于 URL
 	const tagRegex = /#([\p{L}\p{N}_-]+)/gu;
 	const urlRegex = /(https?:\/\/[^\s"']*[^\s"'.?,!])/g;
 
-	
+	// 2. 将内容分割成“普通文本”和“链接文本”的交替数组
 	const segments = plainTextContent.split(urlRegex);
 	let allTags = [];
 
-	
+	// 3. 遍历所有片段
 	segments.forEach(segment => {
-		
-		
+		// 4. 关键：只在【非链接】的文本片段中查找标签
+		//    我们通过重新测试来判断它是否是 URL
 		if (!/^(https?:\/\/[^\s"']*[^\s"'.?,!])/.test(segment)) {
 			const matchedInSegment = [...segment.matchAll(tagRegex)].map(match => match[1].toLowerCase());
 			allTags.push(...matchedInSegment);
 		}
 	});
 
-	
+	// 5. 将从所有安全片段中找到的标签进行去重
 	const uniqueTags = [...new Set(allTags)];
 
 	const statements = [];
@@ -1208,7 +1252,10 @@ async function processNoteTags(db, noteId, content) {
 		await db.batch(statements);
 	}
 }
-
+/**
+ * 处理独立的图片上传请求 (从粘贴操作)
+ * 将图片存入 R2 的一个通用 'uploads' 文件夹中
+ */
 async function handleStandaloneImageUpload(request, env) {
 	try {
 		const formData = await request.formData();
@@ -1219,16 +1266,16 @@ async function handleStandaloneImageUpload(request, env) {
 		}
 
 		const imageId = crypto.randomUUID();
-		
+		// 我们将独立上传的图片统一放到一个 'uploads/' 目录下，与笔记附件分开
 		const r2Key = `uploads/${imageId}`;
 
-		
+		// 将文件流上传到 R2
 		await env.NOTES_R2_BUCKET.put(r2Key, file.stream(), {
 			httpMetadata: { contentType: file.type },
 		});
 
-		
-		
+		// 返回一个可用于访问此图片的内部 URL
+		// 这个 URL 对应我们下面创建的 handleServeStandaloneImage 函数的路由
 		const imageUrl = `/api/images/${imageId}`;
 		return jsonResponse({ success: true, url: imageUrl });
 
@@ -1238,17 +1285,19 @@ async function handleStandaloneImageUpload(request, env) {
 	}
 }
 
-
+/**
+ * 通过 Worker 代理上传图片到 Imgur
+ */
 async function handleImgurProxyUpload(request, env) {
 	try {
 		const formData = await request.formData();
-		
+		// 【注意】从前端获取 Client ID，而不是硬编码在后端
 		const clientId = formData.get('clientId');
 		if (!clientId) {
 			return jsonResponse({ error: 'Imgur Client ID is required.' }, 400);
 		}
 
-		
+		// Imgur 需要 'image' 字段
 		const imageFile = formData.get('file');
 		const imgurFormData = new FormData();
 		imgurFormData.append('image', imageFile);
@@ -1284,11 +1333,11 @@ async function handleGetAllAttachments(request, env) {
 	const db = env.DB;
 	const url = new URL(request.url);
 	const page = parseInt(url.searchParams.get('page') || '1');
-	const limit = 20; 
+	const limit = 20; // 每次加载20条附件
 	const offset = (page - 1) * limit;
 
 	try {
-		
+		// 使用 Common Table Expression (CTE) 和 UNION ALL 来构建一个高效的单一查询
 		const query = `
             WITH combined_attachments AS (
                 SELECT
@@ -1320,7 +1369,7 @@ async function handleGetAllAttachments(request, env) {
             LIMIT ? OFFSET ?;
         `;
 
-		
+		// 为了判断是否有更多页面，我们请求 limit + 1 条记录
 		const stmt = db.prepare(query);
 		const { results: attachmentsPlusOne } = await stmt.bind(limit + 1, offset).all();
 
@@ -1338,7 +1387,12 @@ async function handleGetAllAttachments(request, env) {
 	}
 }
 
-
+/**
+ * 根据 ID 从 R2 中提供（服务）一个独立上传的图片
+ * @param {string} imageId The UUID of the image.
+ * @param {object} env The Worker environment/bindings.
+ * @returns {Promise<Response>}
+ */
 async function handleServeStandaloneImage(imageId, env) {
 	const r2Key = `uploads/${imageId}`;
 	const object = await env.NOTES_R2_BUCKET.get(r2Key);
@@ -1350,14 +1404,19 @@ async function handleServeStandaloneImage(imageId, env) {
 	const headers = new Headers();
 	object.writeHttpMetadata(headers);
 	headers.set('etag', object.httpEtag);
-	
+	// 设置长时间的浏览器缓存，因为这些图片内容是不可变的
 	headers.set('Cache-Control', 'public, max-age=31536000, immutable');
 
 	return new Response(object.body, { headers });
 }
 
 
-
+/**
+ * 从扁平的节点列表中构建层级树结构
+ * @param {Array<object>} nodes - 从数据库查询出的节点数组
+ * @param {string|null} parentId - 当前要查找的父节点ID
+ * @returns {Array<object>} - 构建好的层级树数组
+ */
 function buildTree(nodes, parentId = null) {
 	const tree = [];
 	nodes
@@ -1372,7 +1431,9 @@ function buildTree(nodes, parentId = null) {
 	return tree;
 }
 
-
+/**
+ * GET /api/docs/tree - 获取所有文档节点并返回树状结构
+ */
 async function handleDocsTree(request, env) {
 	try {
 		const stmt = env.DB.prepare("SELECT id, type, title, parent_id FROM nodes ORDER BY title ASC");
@@ -1385,7 +1446,9 @@ async function handleDocsTree(request, env) {
 	}
 }
 
-
+/**
+ * GET /api/docs/node/:id - 获取单个文档节点的内容
+ */
 async function handleDocsNodeGet(request, nodeId, env) {
 	try {
 		const stmt = env.DB.prepare("SELECT id, type, title, content FROM nodes WHERE id = ?");
@@ -1400,7 +1463,9 @@ async function handleDocsNodeGet(request, nodeId, env) {
 	}
 }
 
-
+/**
+ * PUT /api/docs/node/:id - 更新（保存）一个文档节点的内容
+ */
 async function handleDocsNodeUpdate(request, nodeId, env) {
 	try {
 		const { content } = await request.json();
@@ -1414,7 +1479,9 @@ async function handleDocsNodeUpdate(request, nodeId, env) {
 	}
 }
 
-
+/**
+ * POST /api/docs/node - 创建一个新的文档节点（文件或目录）
+ */
 async function handleDocsNodeCreate(request, env) {
 	try {
 		const { type, title, parent_id = null } = await request.json();
@@ -1467,7 +1534,10 @@ async function getAllDescendantIds(db, parentId) {
 
 // DELETE and REMOVE the entire `getAllDescendantIds` function.
 
-
+/**
+ * DELETE /api/docs/node/:id - 删除一个节点。
+ * 数据库的 "ON DELETE CASCADE" 约束会自动处理所有子节点的删除。
+ */
 async function handleDocsNodeDelete(request, nodeId, env) {
 	const db = env.DB;
 	try {
@@ -1476,10 +1546,10 @@ async function handleDocsNodeDelete(request, nodeId, env) {
 			return jsonResponse({ error: "Node not found." }, 404);
 		}
 
-		
+		// 只需要删除这一个节点，数据库会自动删除所有子孙节点。
 		await db.prepare("DELETE FROM nodes WHERE id = ?").bind(nodeId).run();
 
-		
+		// 我们不再需要返回所有被删除的子节点ID，因为前端逻辑也不依赖它。
 		return jsonResponse({ success: true, deletedIds: [nodeId] });
 
 	} catch (e) {
@@ -1548,7 +1618,7 @@ async function handleDocsNodeRename(request, nodeId, env) {
 	try {
 		const { new_title } = await request.json();
 
-		
+		// 验证 new_title 是否存在且不为空
 		if (!new_title || typeof new_title !== 'string' || new_title.trim() === '') {
 			return jsonResponse({ error: "A valid new title is required." }, 400);
 		}
@@ -1563,7 +1633,10 @@ async function handleDocsNodeRename(request, nodeId, env) {
 	}
 }
 
-
+/**
+ * 为文件生成一个唯一的、可公开访问的链接。
+ * POST /api/notes/:noteId/files/:fileId/share
+ */
 async function handleShareFileRequest(noteId, fileId, request, env) {
 	const db = env.DB;
 	const id = parseInt(noteId);
@@ -1594,7 +1667,7 @@ async function handleShareFileRequest(noteId, fileId, request, env) {
 
 		if (!publicId) {
 			publicId = crypto.randomUUID();
-			
+			// 1. 在 KV 中存储映射关系，用于快速、免认证的查找
 			await env.NOTES_KV.put(`public_file:${publicId}`, JSON.stringify({
 				noteId: id,
 				fileId: file.id,
@@ -1602,7 +1675,7 @@ async function handleShareFileRequest(noteId, fileId, request, env) {
 				contentType: file.type
 			}));
 
-			
+			// 2. 将 public_id 持久化到 D1 数据库中
 			files[fileIndex].public_id = publicId;
 			await db.prepare("UPDATE notes SET files = ? WHERE id = ?").bind(JSON.stringify(files), id).run();
 		}
@@ -1617,7 +1690,11 @@ async function handleShareFileRequest(noteId, fileId, request, env) {
 	}
 }
 
-
+/**
+ * 处理对公开文件链接的访问请求，无需身份验证。
+ * GET /api/public/file/:publicId
+ * 现在能同时处理笔记附件和独立上传的图片。
+ */
 async function handlePublicFileRequest(publicId, request, env) {
 	const kvData = await env.NOTES_KV.get(`public_file:${publicId}`, 'json');
 	if (!kvData) {
@@ -1629,12 +1706,12 @@ async function handlePublicFileRequest(publicId, request, env) {
 	let contentType;
 
 	if (kvData.standaloneImageId) {
-		
+		// 1. 是独立上传的图片
 		object = await env.NOTES_R2_BUCKET.get(`uploads/${kvData.standaloneImageId}`);
 		fileName = kvData.fileName || `image_${kvData.standaloneImageId}.png`;
 		contentType = kvData.contentType || 'image/png';
 	} else if (kvData.noteId && kvData.fileId) {
-		
+		// 2. 是笔记的附件
 		object = await env.NOTES_R2_BUCKET.get(`${kvData.noteId}/${kvData.fileId}`);
 		fileName = kvData.fileName;
 		contentType = kvData.contentType;
@@ -1662,7 +1739,15 @@ async function handlePublicFileRequest(publicId, request, env) {
 	return new Response(object.body, { headers });
 }
 
-
+/**
+ * [认证] 处理创建或获取/更新 Memos 分享链接的请求
+ * POST /api/notes/:noteId/share
+ * Body (可选):
+ * {
+ *   "expirationTtl": 3600, // (in seconds) for initial creation or update
+ *   "publicId": "some-uuid" // for updating TTL of an existing link
+ * }
+ */
 async function handleShareNoteRequest(noteId, request, env) {
 	try {
 		const body = await request.json().catch(() => ({}));
@@ -1671,13 +1756,13 @@ async function handleShareNoteRequest(noteId, request, env) {
 			const noteShareKey = `note_share:${noteId}`;
 			const publicMemoKey = `public_memo:${body.publicId}`;
 
-			
+			// 为了安全，验证一下 publicId 是否真的属于这个 noteId
 			const storedPublicId = await env.NOTES_KV.get(noteShareKey);
 			if (storedPublicId !== body.publicId) {
 				return jsonResponse({ error: 'Invalid public ID for this note.' }, 400);
 			}
 
-			
+			// 获取旧值以便重新写入
 			const memoData = await env.NOTES_KV.get(publicMemoKey);
 			if (!memoData) {
 				return jsonResponse({ error: 'Share link not found or already expired.' }, 404);
@@ -1687,9 +1772,9 @@ async function handleShareNoteRequest(noteId, request, env) {
 			if (body.expirationTtl > 0) {
 				options.expirationTtl = body.expirationTtl;
 			}
-			
+			// 如果 expirationTtl <= 0，则不设置 options.expirationTtl，KV 会将其视为永不过期
 
-			
+			// 使用新 TTL 重新写入两个键
 			await Promise.all([
 				env.NOTES_KV.put(publicMemoKey, memoData, options),
 				env.NOTES_KV.put(noteShareKey, body.publicId, options)
@@ -1698,12 +1783,12 @@ async function handleShareNoteRequest(noteId, request, env) {
 			return jsonResponse({ success: true, message: 'Expiration updated.' });
 
 		} else {
-			
+			// --- 创建或获取新链接 ---
 			let publicId = await env.NOTES_KV.get(`note_share:${noteId}`);
 
 			if (!publicId) {
 				publicId = crypto.randomUUID();
-				
+				// 默认过期时间为 1 小时 (3600 秒)
 				const expirationTtl = (body.expirationTtl !== undefined) ? body.expirationTtl : 3600;
 				const options = {};
 				if (expirationTtl > 0) {
@@ -1720,7 +1805,7 @@ async function handleShareNoteRequest(noteId, request, env) {
 			const displayUrl = `${protocol}//${host}/share/${publicId}`;
 			const rawUrl = `${protocol}//${host}/api/public/note/raw/${publicId}`;
 
-			return jsonResponse({ displayUrl, rawUrl, publicId }); 
+			return jsonResponse({ displayUrl, rawUrl, publicId }); // 返回 publicId 以便前端更新
 		}
 	} catch (e) {
 		console.error(`Share/Update Note Error (noteId: ${noteId}):`, e.message);
@@ -1728,7 +1813,10 @@ async function handleShareNoteRequest(noteId, request, env) {
 	}
 }
 
-
+/**
+ * 处理取消 Memos 分享的请求
+ * DELETE /api/notes/:noteId/share
+ */
 async function handleUnshareNoteRequest(noteId, env) {
 	try {
 		const publicId = await env.NOTES_KV.get(`note_share:${noteId}`);
@@ -1744,7 +1832,10 @@ async function handleUnshareNoteRequest(noteId, env) {
 		return jsonResponse({ error: 'Database error while revoking link' }, 500);
 	}
 }
-
+/**
+ * 处理对单个分享 Memos 内容的请求
+ * GET /api/public/note/:publicId
+ */
 async function handlePublicNoteRequest(publicId, env) {
 	const kvData = await env.NOTES_KV.get(`public_memo:${publicId}`, 'json');
 	if (!kvData || !kvData.noteId) {
@@ -1759,7 +1850,7 @@ async function handlePublicNoteRequest(publicId, env) {
 			return jsonResponse({ error: 'Shared note content not found' }, 404);
 		}
 
-		
+		// --- 辅助函数：将任何私有 URL 转换为公开 URL ---
 		const createPublicUrlFor = async (privateUrl) => {
 			const fileMatch = privateUrl.match(/^\/api\/files\/(\d+)\/([a-zA-Z0-9-]+)$/);
 			const imageMatch = privateUrl.match(/^\/api\/images\/([a-zA-Z0-9-]+)$/);
@@ -1777,10 +1868,10 @@ async function handlePublicNoteRequest(publicId, env) {
 				return `/api/public/file/${newPublicId}`;
 			}
 
-			return privateUrl; 
+			return privateUrl; // 如果不是私有链接，则原样返回
 		};
 
-		
+		// 1. 处理笔记正文 `content` 中的内联图片和视频
 		const urlRegex = /(\/api\/(?:files|images)\/[a-zA-Z0-9\/-]+)/g;
 		const matches = [...note.content.matchAll(urlRegex)];
 		let processedContent = note.content;
@@ -1791,15 +1882,15 @@ async function handlePublicNoteRequest(publicId, env) {
 		}
 		note.content = processedContent;
 
-		
+		// 2. 处理 `files` 附件列表
 		let files = [];
 		if (typeof note.files === 'string') {
 			try { files = JSON.parse(note.files); } catch (e) { /* an empty array is fine */ }
 		}
 		for (const file of files) {
-			if (file.id) { 
+			if (file.id) { // 只处理有 id 的内部文件
 				const privateUrl = `/api/files/${note.id}/${file.id}`;
-				
+				// 复用上面的逻辑，但这次我们知道所有元数据
 				const filePublicId = crypto.randomUUID();
 				await env.NOTES_KV.put(`public_file:${filePublicId}`, JSON.stringify({
 					noteId: note.id,
@@ -1812,11 +1903,11 @@ async function handlePublicNoteRequest(publicId, env) {
 		}
 		note.files = files;
 
-		
+		// 3. 安全处理：移除敏感信息
 		delete note.id;
 
-		
-		
+		// `pics` 和 `videos` 字段的内容已经被处理并包含在 `content` 中，
+		// 为保持 API 响应干净，我们不再需要它们。
 		delete note.pics;
 		delete note.videos;
 
@@ -1828,16 +1919,19 @@ async function handlePublicNoteRequest(publicId, env) {
 	}
 }
 
-
+/**
+ * 处理对分享 Memos Raw 内容的请求
+ * GET /api/public/note/raw/:publicId
+ */
 async function handlePublicRawNoteRequest(publicId, env) {
-	
+	// 1. 从 KV 获取 noteId
 	const kvData = await env.NOTES_KV.get(`public_memo:${publicId}`, 'json');
 	if (!kvData || !kvData.noteId) {
 		return new Response('Not Found', { status: 404 });
 	}
 
 	try {
-		
+		// 2. 使用获取到的 noteId 从 D1 查询笔记内容
 		const note = await env.DB.prepare("SELECT content FROM notes WHERE id = ?").bind(kvData.noteId).first();
 		if (!note) {
 			return new Response('Not Found', { status: 404 });
@@ -1850,7 +1944,11 @@ async function handlePublicRawNoteRequest(publicId, env) {
 	}
 }
 
-
+/**
+ * 处理笔记合并请求
+ * POST /api/notes/merge
+ * Body: { sourceNoteId: number, targetNoteId: number, addSeparator: boolean }
+ */
 async function handleMergeNotes(request, env) {
 	const db = env.DB;
 	try {
@@ -1869,7 +1967,7 @@ async function handleMergeNotes(request, env) {
 			return jsonResponse({ error: 'One or both notes not found.' }, 404);
 		}
 
-		
+		// 目标笔记在前，源笔记在后
 		const separator = addSeparator ? '\n\n---\n\n' : '\n\n';
 		const mergedContent = targetNote.content + separator + sourceNote.content;
 		const targetFiles = JSON.parse(targetNote.files || '[]');
@@ -1878,21 +1976,21 @@ async function handleMergeNotes(request, env) {
 
 		const mergedTimestamp = targetNote.updated_at;
 
-		
+		// --- 数据库与 R2 操作 ---
 
-		
+		// 更新目标笔记
 		const stmt = db.prepare(
 			"UPDATE notes SET content = ?, files = ?, updated_at = ? WHERE id = ?"
 		);
 		await stmt.bind(mergedContent, mergedFiles, mergedTimestamp, targetNote.id).run();
 
-		
+		// 为更新后的目标笔记重新处理标签
 		await processNoteTags(db, targetNote.id, mergedContent);
 
-		
+		// 删除源笔记
 		await db.prepare("DELETE FROM notes WHERE id = ?").bind(sourceNote.id).run();
 
-		
+		// 将源笔记的文件移动到目标笔记的 R2 目录下
 		if (sourceFiles.length > 0) {
 			const r2 = env.NOTES_R2_BUCKET;
 			for (const file of sourceFiles) {
@@ -1906,7 +2004,7 @@ async function handleMergeNotes(request, env) {
 			}
 		}
 
-		
+		// 返回更新后的目标笔记
 		const updatedMergedNote = await db.prepare("SELECT * FROM notes WHERE id = ?").bind(targetNote.id).first();
 		if (typeof updatedMergedNote.files === 'string') {
 			updatedMergedNote.files = JSON.parse(updatedMergedNote.files);
@@ -1920,7 +2018,9 @@ async function handleMergeNotes(request, env) {
 	}
 }
 
-
+/**
+ * 统一的 JSON 响应函数
+ */
 function jsonResponse(data, status = 200, headers = new Headers()) {
 	headers.set('Content-Type', 'application/json');
 	return new Response(JSON.stringify(data, null, 2), { status, headers });
