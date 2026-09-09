@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
 	<meta charset="UTF-8"/>
 	<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-	<title>Docs</title>
+	<title>ShukriNotes</title>
 	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 	<link href="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.bubble.css" rel="stylesheet">
 	<link id="light-theme-link" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/vs.min.css">
@@ -11,15 +11,15 @@
 </head>
 <style>
   :root {
-	--bg-color: #f8f9fa;
+	--bg-color: #f4f7f9;
 	--sidebar-bg: #ffffff;
 	--editor-bg: #ffffff;
-	--border-color: #e9ecef;
-	--text-color: #333333;
+	--border-color: #e2e8f0;
+	--text-color: #333;
 	--heading-color: #1a1a1a;
-	--text-muted-color: #6c757d;
-	--accent-color: #007bff;
-	--hover-bg-color: #e9ecef;
+	--text-muted-color: #667;
+	--accent-color: #367cff;
+	--hover-bg-color: #e2e8f0;
 	--active-bg-color: #dbe9f9;
 	--selected-bg-color: #d0e0f0;
 	--active-selected-bg-color: #c0d8f5;
@@ -33,24 +33,24 @@
   }
 
   body.dark-mode {
-	--bg-color: #1a1d24;
-	--sidebar-bg: #262626;
-	--editor-bg: #282c34;
-	--border-color: #3e4451;
-	--text-color: #dcdfe4;
+	--bg-color: #0a1222;
+	--sidebar-bg: #151f31;
+	--editor-bg: #151f31;
+	--border-color: #4a5568;
+	--text-color: #e2e8f0;
 	--heading-color: #eef2f7;
-	--text-muted-color: #9ca3af;
-	--quote-text-color: #9ca3af;
-	--accent-color: #0090f1;
-	--hover-bg-color: #3a404c;
-	--active-bg-color: rgba(0, 144, 241, 0.2);
-	--selected-bg-color: #404754;
-	--active-selected-bg-color: #4a5469;
-	--quote-bg-color: #2c313a;
-	--quote-border-color: #4b5263;
-	--code-inline-bg: #3a404c;
+	--text-muted-color: #a0aec0;
+	--quote-text-color: #a0aec0;
+	--accent-color: #367cff;
+	--hover-bg-color: #2d3748;
+	--active-bg-color: rgba(54, 124, 255, 0.2);
+	--selected-bg-color: #2d3748;
+	--active-selected-bg-color: #4a5568;
+	--quote-bg-color: #1a202c;
+	--quote-border-color: #4a5568;
+	--code-inline-bg: #2d3748;
 	--code-inline-text: #e06c75;
-	--icon-color: #9da5b4;
+	--icon-color: #a0aec0;
 	--link-color: #61afef;
   }
 
@@ -110,7 +110,7 @@
   .action-btn { background-color: var(--sidebar-bg); color: var(--text-muted-color); border: 1px solid var(--border-color); height: 33px; width: 33px; display: inline-flex; align-items: center; justify-content: center; border-radius: 4px; font-size: 14px; text-decoration: none; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); transition: background-color 0.2s ease; }
   .action-btn:hover { background-color: var(--hover-bg-color); color: var(--text-color); }
   #editor-loader { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(255, 255, 255, 0.8); z-index: 200; display: flex; align-items: center; justify-content: center; }
-  body.dark-mode #editor-loader { background: rgba(45, 45, 48, 0.8); }
+  body.dark-mode #editor-loader { background: rgba(21, 31, 49, 0.8); }
   #editor-loader.hidden { display: none; }
   .spinner { border: 4px solid #f3f3f3; border-top: 4px solid var(--accent-color); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
   body.dark-mode .spinner { border: 4px solid #4a4a4a; border-top: 4px solid var(--accent-color); }
@@ -250,7 +250,7 @@
 <div class="app-container">
 	<aside id="sidebar-left">
 		<div class="sidebar-header">
-			<h2>Docs</h2>
+			<h2>ShukriNotes</h2>
 			<div class="sidebar-actions">
 				<button id="new-note-btn" title="Create Doc"><i class="fas fa-file-alt"></i></button>
 				<button id="new-folder-btn" title="Create Folder"><i class="fas fa-folder-plus"></i></button>
@@ -288,23 +288,23 @@
 	// --- MOCK API (UNCHANGED FROM PREVIOUS MERGE) ---
 	const mockData = {
 		tree: [
-			{ id: '1', type: 'folder', title: '快速入门', children: [ {id: '1-1', type: 'file', title: '欢迎使用'}, {id: '1-2', type: 'file', title: 'Markdown 语法'}, ] },
-			{ id: '2', type: 'folder', title: '项目文档', children: [ {id: '2-1', type: 'file', title: '需求分析'}, ] },
-			{id: '3', type: 'file', title: '会议纪要.md'}
+			{ id: '1', type: 'folder', title: 'Quick Start', children: [ {id: '1-1', type: 'file', title: 'Welcome'}, {id: '1-2', type: 'file', title: 'Markdown Syntax'}, ] },
+			{ id: '2', type: 'folder', title: 'Project Docs', children: [ {id: '2-1', type: 'file', title: 'Requirement Analysis'}, ] },
+			{id: '3', type: 'file', title: 'Meeting Notes.md'}
 		],
 		nodes: {
-			'1-1': { id: '1-1', content: '<h1>欢迎使用我们的文档系统</h1><p>这是一个使用 <strong>Quill</strong> 驱动的富文本编辑器。</p><ul><li>功能齐全</li><li>体验流畅</li><li>支持 Markdown 快捷输入</li></ul>' },
-			'1-2': { id: '1-2', content: '<h2>Markdown 基础语法</h2><h3>标题</h3><pre class="ql-syntax" spellcheck="false"># H1\n## H2\n### H3</pre><h3>列表</h3><ul><li>无序列表 1</li><li>无序列表 2</li></ul><ol><li>有序列表 1</li><li>有序列表 2</li></ol><h3>引用</h3><blockquote>Stay hungry, stay foolish.</blockquote>' },
-			'2-1': { id: '2-1', content: '<h1>需求分析文档</h1><table><thead><tr><th>功能点</th><th>优先级</th><th>负责人</th></tr></thead><tbody><tr><td>用户登录</td><td>P0</td><td>张三</td></tr><tr><td>文档编辑</td><td>P0</td><td>李四</td></tr><tr><td>权限管理</td><td>P1</td><td>王五</td></tr></tbody></table>' },
-			'3': { id: '3', content: '<h1>2024-Q3 第一次会议纪要</h1><p>讨论了关于新版本编辑器选型的问题，最终决定采用 Quill。</p>' },
+			'1-1': { id: '1-1', content: '<h1>Welcome to our documentation system</h1><p>This is a rich text editor powered by <strong>Quill</strong>.</p><ul><li>Fully featured</li><li>Smooth experience</li><li>Supports Markdown shortcuts</li></ul>' },
+			'1-2': { id: '1-2', content: '<h2>Markdown Basic Syntax</h2><h3>Headings</h3><pre class="ql-syntax" spellcheck="false"># H1\n## H2\n### H3</pre><h3>Lists</h3><ul><li>Unordered list 1</li><li>Unordered list 2</li></ul><ol><li>Ordered list 1</li><li>Ordered list 2</li></ol><h3>Blockquote</h3><blockquote>Stay hungry, stay foolish.</blockquote>' },
+			'2-1': { id: '2-1', content: '<h1>Requirement Analysis</h1><table><thead><tr><th>Feature</th><th>Priority</th><th>Assignee</th></tr></thead><tbody><tr><td>User Login</td><td>P0</td><td>John Doe</td></tr><tr><td>Document Edit</td><td>P0</td><td>Jane Smith</td></tr><tr><td>Access Control</td><td>P1</td><td>Bob</td></tr></tbody></table>' },
+			'3': { id: '3', content: '<h1>2024-Q3 First Meeting Notes</h1><p>Discussed the selection of the new version editor, finally decided to adopt Quill.</p>' },
 		}
 	};
 	const mockApi = {
 		getTree: () => Promise.resolve(mockData.tree),
-		getNode: (id) => Promise.resolve(mockData.nodes[id] || {id, content: `<h1>未找到文档 ${id}</h1>`}),
+		getNode: (id) => Promise.resolve(mockData.nodes[id] || {id, content: `<h1>Document ${id} not found</h1>`}),
 		createNode: (data) => {
 			const newNode = {...data, id: `new-${Date.now()}`};
-			if (data.type === 'file') { mockData.nodes[newNode.id] = {id: newNode.id, content: `<h1>${data.title}</h1><p>开始写作...</p>`}; }
+			if (data.type === 'file') { mockData.nodes[newNode.id] = {id: newNode.id, content: `<h1>${data.title}</h1><p>Start writing...</p>`}; }
 			return Promise.resolve(newNode);
 		},
 		saveNode: (id, content) => { if(mockData.nodes[id]) mockData.nodes[id].content = content; return Promise.resolve({success: true}); },
@@ -885,7 +885,7 @@
 				saveBtn.disabled = true;
 				saveBtn.innerHTML = '<i class=\'fas fa-check\'></i> Saved';
 			} catch (error) {
-				quill.root.innerHTML = `<h1>加载失败</h1><p>${error.message}</p>`;
+				quill.root.innerHTML = `<h1>Load failed</h1><p>${error.message}</p>`;
 				activeNoteId = null;
 			} finally {
 				hideLoader();
@@ -906,13 +906,13 @@
 		}
 		async function handleDelete(nodeId) {
 			const nodeToDelete = flatNodes.find(n => n.id === nodeId);
-			if (!nodeToDelete || !confirm(`delete "${nodeToDelete.title}"?`)) return;
+			if (!nodeToDelete || !confirm(`Delete "${nodeToDelete.title}"?`)) return;
 			await api.deleteNode(nodeId);
 			await refreshFileTree();
 			if (nodeId === activeNoteId) {
 				activeNoteId = null; selectedNodeId = null;
 				const firstFile = flatNodes.find(n => n.type === 'file');
-				if (firstFile) await loadNote(firstFile.id); else { quill.root.innerHTML = '<h1>所有文档已删除</h1>'; setEditorEditable(false); }
+				if (firstFile) await loadNote(firstFile.id); else { quill.root.innerHTML = '<h1>All documents deleted</h1>'; setEditorEditable(false); }
 			}
 		}
 		async function handleRename(nodeId) {
