@@ -2219,26 +2219,6 @@
 	font-size: 0.8rem;
   }
 
-  body.custom-background {
-	position: relative;
-	z-index: 0;
-  }
-
-  body.custom-background::before {
-	content: '';
-	position: fixed;
-	top: 0;
-	left: 0;
-	width: 100%;
-	height: 100%;
-	background-image: var(--bg-image-url);
-	background-size: cover;
-	background-position: center;
-	background-attachment: fixed;
-	opacity: var(--bg-opacity, 1);
-	z-index: -1;
-  }
-
   #app-layout-container.glass-effect,
   .auth-form.glass-effect {
 	background: rgba(255, 255, 255, 0.2);
@@ -3323,11 +3303,11 @@
 				<svg xmlns="http://www.w3.org/2000/svg" height="28px" viewBox="0 0 24 24" width="28px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M20.54 5.23l-1.39-1.68C18.88 3.21 18.47 3 18 3H6c-.47 0-.88.21-1.16.55L3.46 5.23C3.17 5.57 3 6.02 3 6.5V19c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6.5c0-.48-.17-.93-.46-1.27zM6.24 5h11.52l.83 1H5.41l.83-1zM5 19V8h14v11H5zm11-5.5l-4 4-4-4 1.41-1.41L11 13.67V10h2v3.67l1.59-1.58L16 13.5z"/></svg>
 				<span>Archive</span>
 			</button>
-			<button id="attachments-tab-btn" class="sidebar-tab-btn" data-tab-name="attachments" title="Attachments">
+		</div>
+		<button id="attachments-tab-btn" class="sidebar-tab-btn" style="margin-top: auto; margin-bottom: 0;" data-tab-name="attachments" title="Attachments">
 				<svg xmlns="http://www.w3.org/2000/svg" height="28px" viewBox="0 0 24 24" width="28px" fill="currentColor"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M16.5 6v11.5c0 2.21-1.79 4-4 4s-4-1.79-4-4V5c0-1.38 1.12-2.5 2.5-2.5s2.5 1.12 2.5 2.5v10.5c0 .55-.45 1-1 1s-1-.45-1-1V6H10v9.5c0 1.38 1.12 2.5 2.5 2.5s2.5-1.12 2.5-2.5V5c0-2.21-1.79-4-4-4S7 2.79 7 5v12.5c0 3.04 2.46 5.5 5.5 5.5s5.5-2.46 5.5-5.5V6h-1.5z"/></svg>
 				<span>Files</span>
 			</button>
-		</div>
 	</aside>
 
 </div>
@@ -3574,59 +3554,6 @@
 				<div class='setting-item'>
 					<label for='toggle-feature-docs'>Show Docs Link</label>
 					<input type='checkbox' id='toggle-feature-docs' class='toggle-switch'>
-				</div>
-			</div>
-
-			<div class='setting-group'>
-				<h4>Background</h4>
-				<div class='setting-item'>
-					<label for='bg-image-url'>Image URL</label>
-					<input type='text' id='bg-image-url' placeholder='Enter image URL...'>
-				</div>
-				<div class='setting-item'>
-					<label for='bg-image-upload'>Or Upload</label>
-					<input type='file' id='bg-image-upload' accept='image/*'>
-				</div>
-				<div class='setting-item'>
-					<label for='bg-blur-slider'>Glass Effect</label>
-					<input type='range' id='bg-blur-slider' min='0' max='20' value='0'>
-				</div>
-				<div class='setting-item'>
-					<label for='bg-opacity-slider'>Background Opacity</label>
-					<input type='range' id='bg-opacity-slider' min='0' max='1' step='0.05' value='1'>
-				</div>
-				<div class='setting-item'>
-					<label></label>
-					<div class='setting-buttons-group'>
-						<button id='restore-bg-btn' class='btn btn-secondary btn-sm'>Restore</button>
-						<button id='clear-bg-btn' class='btn btn-secondary btn-sm'>Clear</button>
-					</div>
-				</div>
-			</div>
-
-			<div class='setting-group'>
-				<h4>Surface</h4>
-				<div class='setting-item'>
-					<label for='surface-color-picker-input'>Base Color</label>
-					<div style="display: flex; align-items: center; gap: 0.75rem; position: relative;">
-						<label for='surface-color-picker-input' class='color-picker-label' id='surface-color-picker-label' title="Click to open color picker" style="cursor: pointer;">
-							<div id='surface-color-picker-preview' class='color-picker-preview'></div>
-						</label>
-						<input type='color' id='surface-color-picker-input' class='hidden-color-input'>
-						<div class='hex-input-wrapper'>
-							<input type='text' id='surface-hex-color-input' class='hex-color-input' maxlength='7' placeholder='#151f31'>
-						</div>
-					</div>
-				</div>
-				<div class='setting-item'>
-					<label for='surface-opacity-slider'>Opacity</label>
-					<input type='range' id='surface-opacity-slider' min='0' max='1' step='0.05' value='1'>
-				</div>
-				<div class='setting-item'>
-					<label></label>
-					<div class='setting-buttons-group'>
-						<button id='restore-surface-defaults-btn' class='btn btn-secondary btn-sm'>Restore Defaults</button>
-					</div>
 				</div>
 			</div>
 
@@ -4127,8 +4054,7 @@
 		showSearchBar: true, showStatsCard: true, showCalendar: true, showTags: true,
 		showTimeline: true, showRightSidebar: true, hideEditorInWaterfall: false,
 		showHeatmap: true, imageUploadDestination: 'local', imgurClientId: '',
-		surfaceColor: '#ffffff', surfaceColorDark: '#151f31', surfaceOpacity: 1,
-		backgroundOpacity: 1, backgroundImage: '/bg.jpg', backgroundBlur: 0,
+		
 		waterfallCardWidth: 320, enableDateGrouping: false, telegramProxy: false,
 		showFavorites: true,  // 控制收藏夹
 		showArchive: true,      // 控制归档
@@ -4262,17 +4188,7 @@
 	const toggleTags = document.getElementById('toggle-tags');
 	const toggleTimeline = document.getElementById('toggle-timeline');
 	// 背景设置
-	const bgImageUrl = document.getElementById('bg-image-url');
-	const bgImageUpload = document.getElementById('bg-image-upload');
-	const bgBlurSlider = document.getElementById('bg-blur-slider');
-	const clearBgBtn = document.getElementById('clear-bg-btn');
-	const restoreBgBtn = document.getElementById('restore-bg-btn');
 	const toggleHeatmap = document.getElementById('toggle-heatmap');
-	const bgOpacitySlider = document.getElementById('bg-opacity-slider');
-	const surfaceColorPickerInput = document.getElementById('surface-color-picker-input');
-	const surfaceHexColorInput = document.getElementById('surface-hex-color-input');
-	const surfaceOpacitySlider = document.getElementById('surface-opacity-slider');
-	const restoreSurfaceBtn = document.getElementById('restore-surface-defaults-btn');
 	// 瀑布流设置
 	const waterfallWidthSlider = document.getElementById('waterfall-width-slider');
 	const waterfallWidthValue = document.getElementById('waterfall-width-value');
@@ -5440,85 +5356,6 @@
 	 */
 	async function applySettings() {
 		const isDarkMode = document.body.dataset.theme === 'dark';
-		const baseSurfaceColor = isDarkMode ? settings.surfaceColorDark : settings.surfaceColor;
-		const surfaceOpacity = settings.surfaceOpacity;
-		let r = 255, g = 255, b = 255; // 默认白色
-		if (/^#([A-Fa-f0-9]{3}){1,2}$/.test(baseSurfaceColor)) {
-			let hex = baseSurfaceColor.substring(1).split('');
-			if (hex.length === 3) {
-				hex = [hex[0], hex[0], hex[1], hex[1], hex[2], hex[2]];
-			}
-			hex = '0x' + hex.join('');
-			r = (hex >> 16) & 255;
-			g = (hex >> 8) & 255;
-			b = hex & 255;
-		}
-		const finalSurfaceColor = `rgba(${r}, ${g}, ${b}, ${surfaceOpacity})`;
-		document.documentElement.style.setProperty('--surface-color', finalSurfaceColor);
-		if (isDarkMode) {
-			// 在深色模式下，将 R, G, B 各增加 24 (使其变亮)，但不超过 255
-			const r_light = Math.min(255, r + 24);
-			const g_light = Math.min(255, g + 24);
-			const b_light = Math.min(255, b + 24);
-			const finalInputBg = `rgb(${r_light}, ${g_light}, ${b_light})`;
-			document.documentElement.style.setProperty('--surface-input-bg', finalInputBg);
-		} else {
-			// 在浅色模式下，使用默认的背景色
-			document.documentElement.style.setProperty('--surface-input-bg', 'var(--bg-color)');
-		}
-
-		searchStatsContainer.style.display = settings.showSearchBar ? '' : 'none';
-		statsCard.style.display = settings.showStatsCard ? '' : 'none';
-		calendarWrapper.style.display = settings.showCalendar ? '' : 'none';
-		tagsSectionWrapper.style.display = settings.showTags ? '' : 'none';
-		timelineSectionWrapper.style.display = settings.showTimeline ? '' : 'none';
-		rightSidebar.style.display = settings.showRightSidebar ? '' : 'none';
-		heatmapContainerWrapper.style.display = settings.showHeatmap ? '' : 'none';
-		notesSection.classList.toggle('date-grouping-enabled', settings.enableDateGrouping);
-
-		const areAllSidebarsHidden = !settings.showSearchBar && !settings.showStatsCard && !settings.showCalendar && !settings.showTags && !settings.showTimeline;
-		const currentDest = settings.imageUploadDestination || 'local';
-		const radioToCheck = document.getElementById(`upload-dest-${currentDest}`);
-		if (radioToCheck) {
-			radioToCheck.checked = true;
-		}
-		imgurClientIdInput.value = settings.imgurClientId || '';
-
-		if (areAllSidebarsHidden) {
-			// 如果都隐藏了，就给主容器添加 .no-sidebars 类
-			appLayoutContainer.classList.add('no-sidebars');
-		} else {
-			// 否则，确保移除这个类，恢复到正常的三栏或宽屏模式
-			appLayoutContainer.classList.remove('no-sidebars');
-		}
-		if (!settings.showRightSidebar) {
-			appLayoutContainer.classList.add('no-right-sidebar');
-		} else {
-			appLayoutContainer.classList.remove('no-right-sidebar');
-		}
-
-		const isDefaultBg = settings.backgroundImage === defaultSettings.backgroundImage;
-		const isLightMode = document.body.dataset.theme === 'light';
-
-		// 条件：只有在设置了非默认的背景图片时，才应用背景和毛玻璃效果
-		if (settings.backgroundImage && !isDefaultBg) {
-			// document.body.style.backgroundImage = `url(${settings.backgroundImage})`;
-			document.documentElement.style.setProperty('--bg-image-url', `url(${settings.backgroundImage})`);
-
-			document.body.classList.add('custom-background');
-			appLayoutContainer.classList.add('glass-effect');
-			const authForm = document.querySelector('.auth-form');
-			if (authForm) authForm.classList.add('glass-effect');
-		} else {
-			// 否则，移除背景
-			document.body.style.backgroundImage = '';
-			document.body.classList.remove('custom-background');
-			appLayoutContainer.classList.remove('glass-effect');
-			const authForm = document.querySelector('.auth-form');
-			if (authForm) authForm.classList.remove('glass-effect');
-		}
-		document.documentElement.style.setProperty('--bg-blur', `${settings.backgroundBlur}px`);
-		document.documentElement.style.setProperty('--bg-opacity', settings.backgroundOpacity);
 		scrollToHeatmapEnd();
 
 		document.documentElement.style.setProperty('--waterfall-card-width', `${settings.waterfallCardWidth}px`);
@@ -5529,11 +5366,6 @@
 	 */
 	async function updateSettingsModalControls() {
 		const isDarkMode = document.body.dataset.theme === 'dark';
-		const currentSurfaceColor = isDarkMode ? settings.surfaceColorDark : settings.surfaceColor;
-		document.getElementById('surface-opacity-slider').value = settings.surfaceOpacity;
-		document.getElementById('surface-color-picker-preview').style.backgroundColor = currentSurfaceColor;
-		document.getElementById('surface-hex-color-input').value = currentSurfaceColor;
-		document.getElementById('surface-color-picker-input').value = currentSurfaceColor;
 		toggleSearchBar.checked = settings.showSearchBar;
 		toggleStatsCard.checked = settings.showStatsCard;
 		toggleCalendar.checked = settings.showCalendar;
@@ -5575,46 +5407,6 @@
 		document.getElementById('toggle-feature-docs').addEventListener('change', (e) => {
 			settings.showDocs = e.target.checked;
 			applyFeatureVisibilitySettings();
-		});
-		surfaceOpacitySlider.addEventListener('input', (e) => {
-			settings.surfaceOpacity = e.target.value
-			applySettings();
-		});
-		restoreSurfaceBtn.addEventListener('click', () => {
-			settings.surfaceOpacity = defaultSettings.surfaceOpacity;  // 更新当前值
-			settings.surfaceColor = defaultSettings.surfaceColor;
-			settings.surfaceColorDark = defaultSettings.surfaceColorDark;
-			applySettings();
-			updateSettingsModalControls();
-		});
-		const handleSurfaceColorChange = (color) => {
-			const isDarkMode = document.body.dataset.theme === 'dark';
-			if (isDarkMode) {
-				settings.surfaceColorDark = color;
-			} else {
-				settings.surfaceColor = color;
-			}
-			applySettings();
-			updateSettingsModalControls();
-		};
-
-		surfaceColorPickerInput.addEventListener('input', (e) => {
-			handleSurfaceColorChange(e.target.value);
-		});
-
-		surfaceHexColorInput.addEventListener('input', (e) => {
-			const rawValue = e.target.value;
-			if (/^#[0-9a-f]{6}$/i.test(rawValue)) {
-				handleSurfaceColorChange(rawValue);
-			}
-		});
-		toggleSearchBar.addEventListener('change', (e) => {
-			settings.showSearchBar = e.target.checked;
-			applySettings();
-		});
-		toggleStatsCard.addEventListener('change', (e) => {
-			settings.showStatsCard = e.target.checked;
-			applySettings();
 		});
 		toggleCalendar.addEventListener('change', (e) => {
 			settings.showCalendar = e.target.checked;
@@ -5659,59 +5451,9 @@
 		imgurClientIdInput.addEventListener('input', (e) => {
 			settings.imgurClientId = e.target.value.trim();
 		});
-		bgOpacitySlider.addEventListener('input', (e) => {
-			settings.backgroundOpacity = e.target.value;
-			applySettings();
-		});
 		toggleEditorInWaterfall.addEventListener('change', (e) => {
 			settings.hideEditorInWaterfall = e.target.checked;
 			updateEditorVisibility();
-		});
-		bgImageUrl.addEventListener('input', (e) => {
-			settings.backgroundImage = e.target.value;
-			applySettings();
-		});
-
-		bgImageUpload.addEventListener('change', (e) => {
-			const file = e.target.files[0];
-			if (file) {
-				const reader = new FileReader();
-				reader.onload = (event) => {
-					settings.backgroundImage = event.target.result;
-					applySettings();
-				};
-				reader.readAsDataURL(file);
-			}
-		});
-
-		bgBlurSlider.addEventListener('input', (e) => {
-			settings.backgroundBlur = e.target.value;
-			applySettings();
-		});
-
-		clearBgBtn.addEventListener('click', () => {
-			bgImageUrl.value = '';
-			bgImageUpload.value = '';
-			bgBlurSlider.value = defaultSettings.backgroundBlur;
-			bgOpacitySlider.value = defaultSettings.backgroundOpacity;
-			settings.backgroundImage = '';
-			settings.backgroundBlur = defaultSettings.backgroundBlur;
-			settings.backgroundOpacity = defaultSettings.backgroundOpacity;
-			applySettings();
-		});
-		restoreBgBtn.addEventListener('click', () => {
-			const defaultBg = defaultSettings.backgroundImage;
-			const defaultBlur = defaultSettings.backgroundBlur;
-			const defaultOpacity = defaultSettings.backgroundOpacity;
-
-			bgImageUrl.value = defaultBg.startsWith('data:') ? '' : defaultBg;
-			bgImageUpload.value = '';
-			bgBlurSlider.value = defaultBlur;
-			bgOpacitySlider.value = defaultOpacity;
-			settings.backgroundImage = defaultBg;
-			settings.backgroundBlur = defaultBlur;
-			settings.backgroundOpacity = defaultOpacity;
-			applySettings();
 		});
 		waterfallWidthSlider.addEventListener('input', (e) => {
 			const width = e.target.value;
