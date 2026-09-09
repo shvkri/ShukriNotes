@@ -389,10 +389,12 @@ async function isSessionAuthenticated(request, env) {
  */
 async function handleLogin(request, env) {
 	try {
-		const { username, password } = await request.json();
-		if (username === env.USERNAME && password === env.PASSWORD) {
+		const { password } = await request.json();
+		// Only check password since the username field was intentionally removed from the UI
+		if (password === env.PASSWORD) {
 			const sessionId = crypto.randomUUID();
-			const sessionData = { username, loggedInAt: Date.now() };
+			// Still store a default or env username in the session data for backend compatibility
+			const sessionData = { username: env.USERNAME || 'admin', loggedInAt: Date.now() };
 			await env.NOTES_KV.put(`session:${sessionId}`, JSON.stringify(sessionData), {
 				expirationTtl: SESSION_DURATION_SECONDS,
 			});
