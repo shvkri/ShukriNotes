@@ -1,5 +1,3 @@
-[中文](./README_zh.md)
-
 # Memos Worker: A Cloudflare-Powered Notes and Knowledge Base
 
 ![1](./image/1.png)
