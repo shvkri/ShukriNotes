@@ -146,7 +146,7 @@
 		if (files.length > 0) {
 			attachmentsHTML += '<div class="attachments-grid">';
 			files.forEach(file => {
-
+				
 				if (file.public_url) {
 					attachmentsHTML += `
                         <a href="${file.public_url}" class="attachment-link" download="${file.name}" data-filename="${file.name}">

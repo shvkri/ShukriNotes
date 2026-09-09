@@ -293,9 +293,9 @@
 			{id: '3', type: 'file', title: 'Meeting Notes.md'}
 		],
 		nodes: {
-			'1-1': { id: '1-1', content: '<h1>Welcome to our Documentation System</h1><p>This is a rich text editor powered by <strong>Quill</strong>.</p><ul><li>Full-featured</li><li>Smooth experience</li><li>Supports Markdown shortcuts</li></ul>' },
+			'1-1': { id: '1-1', content: '<h1>Welcome我们的文档系统</h1><p>这是一个使用 <strong>Quill</strong> 驱动的富文本编辑器。</p><ul><li>功能齐全</li><li>体验流畅</li><li>支持 Markdown 快捷输入</li></ul>' },
 			'1-2': { id: '1-2', content: '<h2>Basic Markdown Syntax</h2><h3>Headings</h3><pre class="ql-syntax" spellcheck="false"># H1\n## H2\n### H3</pre><h3>Lists</h3><ul><li>Unordered list 1</li><li>Unordered list 2</li></ul><ol><li>Ordered list 1</li><li>Ordered list 2</li></ol><h3>Quotes</h3><blockquote>Stay hungry, stay foolish.</blockquote>' },
-			'2-1': { id: '2-1', content: '<h1>Requirements Document</h1><table><thead><tr><th>Feature</th><th>Priority</th><th>Owner</th></tr></thead><tbody><tr><td>User Login</td><td>P0</td><td>John</td></tr><tr><td>Document Editing</td><td>P0</td><td>Jane</td></tr><tr><td>Permission Mgmt</td><td>P1</td><td>Bob</td></tr></tbody></table>' },
+			'2-1': { id: '2-1', content: '<h1>Requirements文档</h1><table><thead><tr><th>功能点</th><th>优先级</th><th>负责人</th></tr></thead><tbody><tr><td>用户登录</td><td>P0</td><td>张三</td></tr><tr><td>文档编辑</td><td>P0</td><td>李四</td></tr><tr><td>权限管理</td><td>P1</td><td>王五</td></tr></tbody></table>' },
 			'3': { id: '3', content: '<h1>2024-Q3 Meeting Notes</h1><p>Discussed the selection of the new version editor, finally decided to use Quill.</p>' },
 		}
 	};
@@ -388,7 +388,7 @@
 			userSettings = await api.getSettings();
 		} catch (error) {
 			console.error("Failed to load Memos settings, defaulting to local upload:", error);
-
+			
 			userSettings = { imageUploadDestination: 'local' };
 		}
 
@@ -401,7 +401,7 @@
 					const formData = new FormData();
 					formData.append('file', file);
 
-
+					
 					const response = await fetch('/api/upload/image', {
 						method: 'POST',
 						body: formData,
@@ -416,9 +416,9 @@
 					}
 					const formData = new FormData();
 					formData.append('file', file);
-					formData.append('clientId', userSettings.imgurClientId);
+					formData.append('clientId', userSettings.imgurClientId); 
 
-
+					
 					const response = await fetch('/api/proxy/upload/imgur', {
 						method: 'POST',
 						body: formData,
@@ -435,7 +435,7 @@
 				}
 			} catch (error) {
 				console.error("Image upload failed:", error);
-				throw error;
+				throw error; 
 			}
 		}
 
