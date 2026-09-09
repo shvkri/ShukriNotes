@@ -17,8 +17,8 @@
   :root {
 	--bg-color: #f4f7f9;
 	--surface-color: #ffffff;
-	--primary-color: #367cff;
-	--primary-hover: #2a63cc;
+	--primary-color: #d69e2e;
+	--primary-hover: #b7791f;
 	--text-color: #333;
 	--text-secondary: #667;
 	--border-color: #e2e8f0;
@@ -3352,7 +3352,7 @@
 		<input type='color' id='color-picker-input' class='hidden-color-input'>
 
 		<div class='hex-input-wrapper'>
-			<input type='text' id='hex-color-input' class='hex-color-input' maxlength='7' placeholder='#367cff'>
+			<input type='text' id='hex-color-input' class='hex-color-input' maxlength='7' placeholder='#d69e2e'>
 		</div>
 	</div>
 </div>
@@ -5324,6 +5324,7 @@
 
 	// --- 预定义的主题色 ---
 	const themeColors = [
+		{ name: 'Gold', color: '#d69e2e', hover: '#b7791f' },
 		{ name: 'Blue', color: '#367cff', hover: '#2a63cc' },
 		{ name: 'Green', color: '#42c251', hover: '#42c251' },
 		{ name: 'Purple', color: '#805ad5', hover: '#6b46c1' },
@@ -5331,7 +5332,6 @@
 		{ name: 'Pink', color: '#d53f8c', hover: '#b83280' },
 		{ name: 'Red', color: '#e53e3e', hover: '#c53030' },
 		{ name: 'Teal', color: '#3ad3ba', hover: '#287a78' },
-		{ name: 'Yellow', color: '#d69e2e', hover: '#b7791f' }
 	];
 
 	// 动态填充预设颜色
