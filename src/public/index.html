@@ -981,16 +981,15 @@
 	transform: scale(0.9);
 	transition: transform 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
 	border-radius: 12px;
-  }
+  	overflow: hidden;
+}
 
   .custom-modal-overlay.visible .custom-modal-box.active {
 	display: block; /* Show the active box */
 	transform: scale(1) translate3d(0, 0, 0);
   }
 
-  #custom-alert-message {
-	margin: 0 0 1.5rem;
-  }
+  
 
   .custom-modal-actions {
 	display: flex;
@@ -999,7 +998,9 @@
 	margin-top: 1.5rem;
   }
 
-  #custom-confirm-message, #custom-alert-message {
+  #custom-confirm-message, #custom-alert-message, #merge-confirm-message {
+	margin-top: 0;
+	margin-bottom: 1.5rem;
 	color: var(--text-color);
 	font-size: 1rem;
 	line-height: 1.5;
@@ -2177,7 +2178,8 @@
 
   .setting-item input[type="range"] {
 	width: 50%;
-  }
+	accent-color: var(--primary-color);
+}
 
   .toggle-switch {
 	position: relative;
