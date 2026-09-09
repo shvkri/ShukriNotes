@@ -4,7 +4,7 @@
 	<meta charset='UTF-8'>
 	<meta name='viewport' content='width=device-width, initial-scale=1.0'>
 	<script src='https://cdnjs.cloudflare.com/ajax/libs/marked/15.0.12/marked.min.js'></script>
-	<title>Shared Memo</title>
+	<title>ShukriNotes - Shared Memo</title>
 	<link id='hljs-light-theme' rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css'>
 	<link id='hljs-dark-theme' rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css' disabled>
 	<link rel='icon' type='image/png' href='/favicon.png'>
@@ -12,7 +12,7 @@
 <style>
   :root {
 	--bg-color: #f4f7f9; --surface-color: #ffffff; --primary-color: #367cff; --text-color: #333; --text-secondary: #667;
-	--border-color: #e2e8f0; --border-radius-base: 6px; --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+	--border-color: #e2e8f0; --border-radius-base: 8px; --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   }
   html[data-theme='dark'] {
 	--bg-color: #0a1222; --surface-color: #151f31; --text-color: #e2e8f0; --text-secondary: #a0aec0; --border-color: #4a5568;
@@ -21,16 +21,14 @@
   body {
 	font-family: var(--font-family);
 	color: var(--text-color);
+	background-color: var(--bg-color);
 	margin: 0;
 	padding: 2rem 1rem;
 	line-height: 1.6;
-	background-size: cover;
-	background-position: center;
-	background-attachment: fixed;
 	min-height: 100vh;
 	box-sizing: border-box;
   }
-  html[data-theme='dark'] { background-image: url(/bg.jpg);  }
+
   .wrapper { max-width: 732px; margin: 0 auto; }
   header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; color: var(--text-color); }
   header h3 { margin: 0; font-size: 1.5rem; }
@@ -42,17 +40,11 @@
   .icon-btn:hover { background-color: rgba(127, 127, 127, 0.2); color: var(--text-color); }
 
   .note {
-	background: rgba(255, 255, 255, 0.7);
-	backdrop-filter: blur(8px);
-	-webkit-backdrop-filter: blur(8px);
-	border: 1px solid rgba(255, 255, 255, 0.2);
+	background: var(--surface-color);
+	border: 1px solid var(--border-color);
 	border-radius: var(--border-radius-base);
-	padding: 1rem 1.5rem;
-	box-shadow: 0 4px 20px rgba(0,0,0,.1);
-  }
-  html[data-theme='dark'] .note {
-	background: rgba(21, 31, 49, 0.75);
-	border-color: rgba(255, 255, 255, 0.1);
+	padding: 1.5rem;
+	box-shadow: 0 4px 12px rgba(0,0,0,.05);
   }
 
   .note-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: .5rem; }
@@ -88,7 +80,7 @@
 
 <div class="wrapper">
 	<header>
-		<h3><a href='https://github.com/souvenp/memos-worker' target="_blank">MEMOS</a></h3>
+		<h3><a href='/' target="_blank">ShukriNotes</a></h3>
 		<button type='button' id='theme-toggle-btn' class='icon-btn' title='Toggle Theme'></button>
 	</header>
 	<main id="main-content">
@@ -146,7 +138,6 @@
 		if (files.length > 0) {
 			attachmentsHTML += '<div class="attachments-grid">';
 			files.forEach(file => {
-				// 后端现在会返回一个完整的、可直接使用的 public_url
 				if (file.public_url) {
 					attachmentsHTML += `
                         <a href="${file.public_url}" class="attachment-link" download="${file.name}" data-filename="${file.name}">
